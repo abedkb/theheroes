@@ -1,0 +1,1657 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>THE HEROES</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --ink:#0f172a;--ink2:#334155;--mt:#64748b;--line:#e2e8f0;
+  --bg:#f0f4f8;--panel:#ffffff;
+  --gold:#b45309;--gl:#fef3c7;
+  --green:#15803d;--grl:#dcfce7;
+  --red:#b91c1c;--rdl:#fee2e2;
+  --blue:#1d4ed8;--bll:#dbeafe;
+  --purple:#6d28d9;--prl:#ede9fe;
+  --teal:#0f766e;--tll:#ccfbf1;
+  --r:20px;--rs:12px;--sh:0 4px 24px rgba(15,23,42,0.07);--shl:0 16px 48px rgba(15,23,42,0.13);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+.hidden{display:none!important}
+
+/* AUTH */
+.auth-screen{position:fixed;inset:0;background:rgba(10,15,30,0.93);display:flex;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(6px)}
+.auth-card{background:var(--panel);width:95%;max-width:460px;border-radius:var(--r);overflow:hidden;box-shadow:var(--shl);max-height:96vh;overflow-y:auto}
+.auth-head{background:var(--ink);padding:30px 28px 22px;text-align:center;position:relative}
+.auth-head::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:60px;height:3px;background:var(--gold);border-radius:2px}
+.auth-logo{font-family:'Playfair Display',serif;font-size:26px;color:#fff}
+.auth-logo span{color:#fbbf24}
+.auth-sub{font-size:11px;color:rgba(255,255,255,0.4);margin-top:6px;letter-spacing:.1em;text-transform:uppercase}
+.tab-strip{display:flex;border-bottom:1px solid var(--line);background:#f8fafc}
+.tab-btn{flex:1;padding:13px 6px;border:none;background:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--mt);border-bottom:2px solid transparent;transition:all .2s}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);background:#fff}
+.auth-body{padding:24px 26px 28px}
+
+/* FIELDS */
+.field{margin-bottom:13px}
+.field label{display:block;font-size:11px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.field input,.field select,.field textarea{padding:11px 14px;border:1.5px solid var(--line);border-radius:var(--rs);font-size:14px;font-family:'DM Sans',sans-serif;background:#fff;color:var(--ink);transition:all .15s;width:100%}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(180,83,9,0.09)}
+.field input::placeholder,.field textarea::placeholder{color:#94a3b8}
+.field select option{color:var(--ink)}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fgrid .full{grid-column:1/-1}
+
+/* BUTTONS */
+.btn{padding:11px 18px;border:none;border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn-block{width:100%;justify-content:center;margin-top:6px}
+.btn-ink{background:var(--ink);color:#fff}
+.btn-gold{background:var(--gold);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-red{background:var(--red);color:#fff}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-teal{background:var(--teal);color:#fff}
+.btn-outline{background:white;color:var(--ink);border:1.5px solid var(--line)}
+.btn-sm{padding:6px 13px;font-size:12px;border-radius:8px}
+.btn-logout{background:rgba(185,28,28,0.12);border:1px solid rgba(185,28,28,0.3);color:#fca5a5;padding:9px 18px;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
+.btn-logout:hover{background:var(--red);color:#fff;border-color:var(--red)}
+
+/* APP LAYOUT */
+.app{max-width:1180px;margin:0 auto;padding:24px 16px 60px}
+
+/* HERO */
+.hero{background:var(--ink);border-radius:var(--r);padding:28px 32px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:20px;box-shadow:var(--shl);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-60px;right:-60px;width:280px;height:280px;background:radial-gradient(circle,rgba(251,191,36,0.09),transparent 70%);border-radius:50%;pointer-events:none}
+.hero-title{font-family:'Playfair Display',serif;font-size:32px;color:#fff;line-height:1.1}
+.hero-title span{color:#fbbf24}
+.hero-tag{font-size:11px;color:rgba(255,255,255,0.36);margin-top:5px;letter-spacing:.13em;text-transform:uppercase}
+.hero-badge{background:var(--gold);color:#fff;font-size:10px;font-weight:700;padding:3px 12px;border-radius:999px;display:inline-block;margin-top:8px;text-transform:uppercase;letter-spacing:.07em}
+.hero-stats{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.hstat{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:var(--rs);padding:11px 16px;text-align:center;min-width:120px}
+.hstat-lbl{font-size:10px;color:rgba(255,255,255,0.38);text-transform:uppercase;letter-spacing:.09em}
+.hstat-val{font-size:17px;font-weight:700;color:#fff;margin-top:3px}
+.hstat-val.gold{color:#fbbf24}
+
+/* TABS NAV */
+.nav-tabs{display:flex;background:var(--panel);border-radius:var(--rs);padding:4px;margin-bottom:20px;box-shadow:var(--sh);overflow-x:auto;gap:3px}
+.nav-tab{flex:1;padding:10px 8px;text-align:center;border-radius:10px;cursor:pointer;font-size:12px;font-weight:600;color:var(--mt);transition:all .2s;white-space:nowrap;min-width:80px;border:none;background:none;font-family:'DM Sans',sans-serif}
+.nav-tab.active{background:var(--ink);color:white}
+.nav-tab:hover:not(.active){background:var(--bg)}
+
+/* PAGE */
+.page{display:none}.page.active{display:block}
+
+/* SUMMARY CARDS */
+.sum-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
+.sum-card{background:var(--panel);border-radius:var(--rs);padding:16px 14px;border:1px solid var(--line);box-shadow:var(--sh);position:relative;overflow:hidden}
+.sum-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 2px 2px}
+.sum-card.c-blue::after{background:var(--blue)}
+.sum-card.c-gold::after{background:var(--gold)}
+.sum-card.c-green::after{background:var(--green)}
+.sum-card.c-red::after{background:var(--red)}
+.sum-card.c-ink::after{background:var(--ink)}
+.sum-card.c-purple::after{background:var(--purple)}
+.sum-label{font-size:10px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:.08em}
+.sum-value{font-size:16px;font-weight:700;margin-top:7px;color:var(--ink);line-height:1.2}
+.sum-sub{font-size:10px;color:var(--mt);margin-top:4px}
+
+/* SECTION */
+.sec{background:var(--panel);border-radius:var(--r);border:1px solid var(--line);box-shadow:var(--sh);margin-bottom:20px;overflow:hidden}
+.sec-head{padding:16px 22px;border-bottom:1px solid var(--line);background:#f8fafc;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.sec-head h3{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--ink)}
+.sec-body{padding:22px}
+
+/* ADMIN WRAP */
+.admin-wrap{background:linear-gradient(135deg,#78350f,#b45309);border-radius:var(--r);padding:3px;margin-bottom:20px;box-shadow:var(--shl)}
+.admin-inner{background:var(--panel);border-radius:calc(var(--r) - 3px);padding:24px}
+.admin-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--gold);margin-bottom:20px}
+.admin-cols{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.admin-sub{font-size:13px;font-weight:700;color:var(--ink);padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+
+/* TABLE */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:.07em;background:#f8fafc;border-bottom:1px solid var(--line)}
+td{padding:11px 14px;font-size:13px;border-bottom:1px solid #f1f5f9;color:var(--ink);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8fafc}
+.empty-td{text-align:center;color:var(--mt);padding:28px 14px!important;font-size:13px}
+
+/* PILLS */
+.pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700}
+.pill-green{background:var(--grl);color:var(--green)}
+.pill-red{background:var(--rdl);color:var(--red)}
+.pill-amber{background:var(--gl);color:var(--gold)}
+.pill-blue{background:var(--bll);color:var(--blue)}
+.pill-purple{background:var(--prl);color:var(--purple)}
+.pill-teal{background:var(--tll);color:var(--teal)}
+
+/* NOTIFY */
+.notify{padding:11px 16px;border-radius:var(--rs);font-size:13px;font-weight:600;margin-bottom:14px;display:none;line-height:1.5}
+.notify.show{display:block}
+.notify-success{background:var(--grl);color:var(--green);border-left:3px solid var(--green)}
+.notify-error{background:var(--rdl);color:var(--red);border-left:3px solid var(--red)}
+.notify-info{background:var(--bll);color:var(--blue);border-left:3px solid var(--blue)}
+.notify-warn{background:var(--gl);color:var(--gold);border-left:3px solid var(--gold)}
+
+/* SYNC BANNER */
+.sync-banner{background:var(--grl);border:1px solid #bbf7d0;border-radius:var(--rs);padding:10px 16px;font-size:13px;color:var(--green);font-weight:600;margin-bottom:16px;display:none;align-items:center;gap:8px}
+.sync-banner.show{display:flex}
+.sync-dot{width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse 1.5s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+
+/* REPORT */
+.report-wrap{background:linear-gradient(135deg,#1e3a5f,#1d4ed8);border-radius:var(--r);padding:3px;margin-bottom:20px;box-shadow:var(--shl)}
+.report-inner{background:var(--panel);border-radius:calc(var(--r) - 3px);padding:24px}
+.report-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--blue);margin-bottom:6px}
+.report-sub{font-size:13px;color:var(--mt);margin-bottom:22px}
+.rep-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.rep-tab{padding:8px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--line);background:white;color:var(--mt);transition:all .2s;font-family:'DM Sans',sans-serif}
+.rep-tab.active{background:var(--blue);color:white;border-color:var(--blue)}
+.filter-row{display:grid;grid-template-columns:1fr 1fr auto auto;gap:12px;align-items:end;margin-bottom:16px}
+.rep-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.rep-card{background:#f8fafc;border:1px solid var(--line);border-radius:var(--rs);padding:14px 16px}
+.rep-card-lbl{font-size:11px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:.07em}
+.rep-card-val{font-size:20px;font-weight:700;margin-top:6px;color:var(--ink)}
+
+/* CHART */
+.chart-sec{background:var(--panel);border-radius:var(--r);border:1px solid var(--line);box-shadow:var(--sh);margin-bottom:20px;overflow:hidden}
+.chart-head{padding:16px 22px;border-bottom:1px solid var(--line);background:#f8fafc;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.chart-body{padding:22px}
+.chart-container{position:relative;width:100%;height:300px}
+
+/* MEMBER OVERLAY */
+.overlay{position:fixed;inset:0;background:rgba(10,15,30,0.85);display:none;align-items:center;justify-content:center;z-index:500;backdrop-filter:blur(3px)}
+.overlay.open{display:flex}
+.detail-box{background:var(--panel);width:95%;max-width:540px;border-radius:var(--r);padding:28px;box-shadow:var(--shl);max-height:90vh;overflow-y:auto}
+.detail-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}
+.detail-name{font-family:'Playfair Display',serif;font-size:22px;font-weight:700}
+.detail-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--mt);padding:4px 8px;border-radius:8px}
+.detail-close:hover{background:var(--rdl);color:var(--red)}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+.dstat{background:#f8fafc;border:1px solid var(--line);border-radius:var(--rs);padding:12px 14px}
+.dstat-lbl{font-size:11px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:.06em}
+.dstat-val{font-size:18px;font-weight:700;margin-top:5px}
+
+/* PENDING ITEM */
+.pending-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);gap:10px}
+.pending-item:last-child{border-bottom:none}
+.pending-name{font-weight:600;font-size:13px}
+.pending-meta{font-size:11px;color:var(--mt);margin-top:2px}
+
+/* LOG */
+.log-item{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.log-item:last-child{border-bottom:none}
+.log-date{font-size:11px;color:var(--mt)}
+
+/* EXPENSE CARD */
+.exp-card{background:#f8fafc;border:1px solid var(--line);border-radius:var(--rs);padding:14px;margin-bottom:10px}
+.exp-card-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.exp-card-title{font-weight:700;font-size:14px}
+.exp-card-meta{font-size:12px;color:var(--mt);margin-top:3px}
+
+/* RESPONSIVE */
+@media(max-width:960px){.sum-grid{grid-template-columns:repeat(3,1fr)}.admin-cols{grid-template-columns:1fr}.filter-row{grid-template-columns:1fr 1fr}.rep-cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.sum-grid{grid-template-columns:repeat(2,1fr)}.hero-stats{width:100%}.hstat{flex:1;min-width:80px}.sec-body{padding:16px}.admin-inner{padding:16px}.fgrid{grid-template-columns:1fr}.detail-grid{grid-template-columns:1fr}.rep-cards{grid-template-columns:1fr}.filter-row{grid-template-columns:1fr}}
+@media(max-width:380px){.sum-grid{grid-template-columns:1fr}}
+@media print{body{background:#fff!important}.hero{background:#0f172a!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.no-print,.btn-logout{display:none!important}.auth-screen,.overlay{display:none!important}}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen" class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-head">
+      <div class="auth-logo">THE <span>HEROES</span></div>
+      <div class="auth-sub">Mfumo wa Uendeshaji Kikundi</div>
+    </div>
+    <div class="tab-strip">
+      <button class="tab-btn active" id="tLogin" onclick="switchAuthTab('login')">Ingia</button>
+      <button class="tab-btn" id="tReg" onclick="switchAuthTab('reg')">Jisajili</button>
+      <button class="tab-btn" id="tAdmin" onclick="switchAuthTab('admin')">Uongozi</button>
+    </div>
+    <div class="auth-body">
+      <!-- LOGIN -->
+      <div id="loginSection">
+        <div id="loginNotify" class="notify"></div>
+        <div class="field"><label>Jina la Mtumiaji</label><input id="lUser" type="text" autocomplete="username"/></div>
+        <div class="field"><label>Nywila</label><input id="lPass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')loginUser()"/></div>
+        <button class="btn btn-ink btn-block" onclick="loginUser()">Ingia kwenye Akaunti</button>
+      </div>
+      <!-- REGISTER -->
+      <div id="regSection" class="hidden">
+        <div id="regNotify" class="notify"></div>
+        <p style="font-size:12px;color:var(--mt);margin-bottom:14px;line-height:1.6">Jaza taarifa zako zote. Kiongozi atakikubali ombi lako.</p>
+        <div class="field"><label>Jina Kamili <span style="color:var(--red)">*</span></label><input id="regJina" type="text"/></div>
+        <div class="field"><label>Namba ya Simu <span style="color:var(--red)">*</span></label><input id="regSimu" type="tel"/></div>
+        <div class="field"><label>Jina la Mtumiaji <span style="color:var(--red)">*</span></label><input id="regUser" type="text"/></div>
+        <div class="fgrid">
+          <div class="field"><label>Nywila <span style="color:var(--red)">*</span></label><input id="regPass" type="password"/></div>
+          <div class="field"><label>Thibitisha Nywila <span style="color:var(--red)">*</span></label><input id="regPass2" type="password"/></div>
+        </div>
+        <p style="font-size:12px;font-weight:700;color:var(--ink);margin:14px 0 10px;">Tegemezi Wako (Hiari — unaweza kuongeza baadaye)</p>
+        <div class="field"><label>Baba</label><input id="teg-baba" type="text"/></div>
+        <div class="field"><label>Mama</label><input id="teg-mama" type="text"/></div>
+        <div class="field"><label>Mke / Mume</label><input id="teg-mwenzi" type="text"/></div>
+        <div class="fgrid">
+          <div class="field"><label>Mtoto 1</label><input id="teg-mtoto1" type="text"/></div>
+          <div class="field"><label>Mtoto 2</label><input id="teg-mtoto2" type="text"/></div>
+          <div class="field"><label>Mtoto 3</label><input id="teg-mtoto3" type="text"/></div>
+          <div class="field"><label>Mtoto 4</label><input id="teg-mtoto4" type="text"/></div>
+        </div>
+        <button class="btn btn-green btn-block" onclick="doRegister()">Tuma Ombi la Usajili</button>
+      </div>
+      <!-- ADMIN -->
+      <div id="adminSection" class="hidden">
+        <div id="adminAuthNotify" class="notify"></div>
+        <div class="field"><label>Nywila ya Usimamizi (Super Key)</label><input id="superKey" type="password"/></div>
+        <div class="field"><label>Cheo</label>
+          <select id="adminCheo"><option>Mwenyekiti</option><option>Katibu</option><option>Mwekahazina</option></select>
+        </div>
+        <div class="field"><label>Jina la Mtumiaji</label><input id="aUser" type="text"/></div>
+        <div class="field"><label>Nywila</label><input id="aPass" type="password"/></div>
+        <button class="btn btn-gold btn-block" onclick="registerAdmin()">Sajili Kiongozi</button>
+        <hr style="border:none;border-top:1px solid var(--line);margin:18px 0"/>
+        <p style="font-size:12px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">Ingia kama Msimamizi</p>
+        <!-- Default test credentials panel -->
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-bottom:14px">
+          <div style="font-size:11px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Akaunti za Msingi (Majaribio)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+            <button onclick="quickLogin('katibu','katibu123')" style="background:#fff;border:1px solid #bbf7d0;border-radius:8px;padding:8px 6px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:11px;color:#0f172a;text-align:center;line-height:1.5">
+              <div style="font-weight:700">Katibu</div>
+              <div style="color:#64748b">katibu</div>
+              <div style="color:#64748b">katibu123</div>
+            </button>
+            <button onclick="quickLogin('mwekahazina','hazina123')" style="background:#fff;border:1px solid #bbf7d0;border-radius:8px;padding:8px 6px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:11px;color:#0f172a;text-align:center;line-height:1.5">
+              <div style="font-weight:700">Mwekahazina</div>
+              <div style="color:#64748b">mwekahazina</div>
+              <div style="color:#64748b">hazina123</div>
+            </button>
+            <button onclick="quickLogin('mwenyekiti','heroes123')" style="background:#fff;border:1px solid #bbf7d0;border-radius:8px;padding:8px 6px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:11px;color:#0f172a;text-align:center;line-height:1.5">
+              <div style="font-weight:700">Mwenyekiti</div>
+              <div style="color:#64748b">mwenyekiti</div>
+              <div style="color:#64748b">heroes123</div>
+            </button>
+          </div>
+          <button onclick="seedDefaultLeaders()" style="margin-top:10px;width:100%;background:#15803d;color:#fff;border:none;border-radius:8px;padding:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Hifadhi Akaunti hizi kwenye Database</button>
+        </div>
+        <div class="field"><label>Jina la Mtumiaji</label><input id="alUser" type="text"/></div>
+        <div class="field"><label>Nywila</label><input id="alPass" type="password" onkeydown="if(event.key==='Enter')loginAdmin()"/></div>
+        <button class="btn btn-gold btn-block" onclick="loginAdmin()">Ingia kama Msimamizi</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MEMBER DETAIL OVERLAY -->
+<div class="overlay" id="memberOverlay">
+  <div class="detail-box">
+    <div class="detail-head">
+      <div><div class="detail-name" id="detailName">—</div><div style="font-size:13px;color:var(--mt);margin-top:4px" id="detailMeta">—</div></div>
+      <button class="detail-close" onclick="closeOverlay()">✕</button>
+    </div>
+    <div class="detail-grid" id="detailGrid"></div>
+    <div id="detailTegemezi"></div>
+    <div id="detailLoans"></div>
+    <div id="detailQuickUpdate"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app" id="mainApp" style="display:none">
+  <!-- HERO -->
+  <div class="hero">
+    <div>
+      <div class="hero-title">THE <span>HEROES</span></div>
+      
+      <span class="hero-badge" id="userBadge">Mwanachama</span>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat"><div class="hstat-lbl">Karibu</div><div class="hstat-val" id="welcomeName">—</div></div>
+      <div class="hstat"><div class="hstat-lbl">Hisa Maendeleo</div><div class="hstat-val gold" id="userHisaM">0</div></div>
+      <div class="hstat"><div class="hstat-lbl">Hisa Jamii</div><div class="hstat-val gold" id="userHisaJ">0</div></div>
+      <button class="btn-logout no-print" onclick="doLogout()">Toka ↩</button>
+    </div>
+  </div>
+
+  <!-- SYNC BANNER -->
+  <div class="sync-banner" id="syncBanner"><div class="sync-dot"></div><span id="syncMsg">Imesasishwa!</span></div>
+
+  <!-- NAV TABS -->
+  <div class="nav-tabs" id="navTabs">
+    <button class="nav-tab active" onclick="showPage('pg-dashibodi')">📊 Dashibodi</button>
+    <button class="nav-tab" onclick="showPage('pg-mikopo')">💰 Mikopo</button>
+    <button class="nav-tab" onclick="showPage('pg-msaada')">🤝 Msaada</button>
+    <button class="nav-tab admin-tab hidden" onclick="showPage('pg-admin')">🛡 Uongozi</button>
+    <button class="nav-tab admin-tab hidden" onclick="showPage('pg-matumizi')">💸 Matumizi</button>
+    <button class="nav-tab admin-tab hidden" onclick="showPage('pg-ripoti')">📋 Ripoti</button>
+  </div>
+
+  <!-- ═══ PAGE: DASHIBODI ═══ -->
+  <div class="page active" id="pg-dashibodi">
+    <div class="sum-grid">
+      <div class="sum-card c-blue"><div class="sum-label">Hisa Maendeleo</div><div class="sum-value" id="gHisaM">TZS 0</div><div class="sum-sub">Jumla wanachama wote</div></div>
+      <div class="sum-card c-gold"><div class="sum-label">Hisa Jamii</div><div class="sum-value" id="gHisaJ">TZS 0</div><div class="sum-sub">Baada ya matumizi</div></div>
+      <div class="sum-card c-ink"><div class="sum-label">Mikopo Hai</div><div class="sum-value" id="gMikopo">TZS 0</div><div class="sum-sub">Iliyoidhinishwa</div></div>
+      <div class="sum-card c-green"><div class="sum-label">Faida (10%)</div><div class="sum-value" id="gFaida">TZS 0</div><div class="sum-sub">Riba inayotarajiwa</div></div>
+      <div class="sum-card c-red"><div class="sum-label">Gawio / Mwanachama</div><div class="sum-value" id="gGawioM">TZS 0</div><div class="sum-sub">90% faida ÷ wanachama</div></div>
+      <div class="sum-card c-purple"><div class="sum-label">Gawio / Kiongozi</div><div class="sum-value" id="gGawioK">TZS 0</div><div class="sum-sub">10% faida ÷ viongozi 3</div></div>
+    </div>
+
+    <!-- Member info card (non-admin) -->
+    <div class="sec" id="memberInfoCard" style="display:none">
+      <div class="sec-head"><h3>ℹ️ Taarifa za Kikundi</h3></div>
+      <div class="sec-body">
+        <p style="font-size:14px;color:var(--mt);line-height:1.8">Kadi zilizo hapo juu zinaonyesha <strong>hali ya fedha ya kikundi kwa ujumla</strong>. Hisa zako binafsi zinasimamiwa na viongozi. Unaweza kuomba mkopo au msaada hapa chini.</p>
+      </div>
+    </div>
+
+    <!-- Chart (admin only) -->
+    <div class="chart-sec admin-only" style="display:none">
+      <div class="chart-head">
+        <h3>📊 Hisa kwa Mwezi</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" class="no-print">
+          <select id="chartYear" onchange="renderChart()" style="padding:8px 12px;font-size:13px;border:1px solid var(--line);border-radius:8px;background:white"></select>
+          <select id="chartType" onchange="renderChart()" style="padding:8px 12px;font-size:13px;border:1px solid var(--line);border-radius:8px;background:white">
+            <option value="both">Maendeleo + Jamii</option>
+            <option value="maendeleo">Hisa Maendeleo Tu</option>
+            <option value="jamii">Hisa Jamii Tu</option>
+          </select>
+        </div>
+      </div>
+      <div class="chart-body"><div class="chart-container"><canvas id="hisaChart"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: MIKOPO ═══ -->
+  <div class="page" id="pg-mikopo">
+    <!-- Loan capacity -->
+    <div class="sec">
+      <div class="sec-head"><h3>💰 Omba Mkopo Mpya</h3><span class="pill pill-blue">Mwanachama</span></div>
+      <div class="sec-body">
+        <div id="loanNotify" class="notify"></div>
+        <div style="background:#f8fafc;border:1px solid var(--line);border-radius:var(--rs);padding:14px;margin-bottom:16px">
+          <div style="font-size:12px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Uwezo Wako wa Mkopo</div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span>Mkopo wa Maendeleo (Max 2× Hisa)</span><strong id="loanCapM">TZS 0</strong></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span>Mkopo wa Dharura (Max)</span><strong>TZS 100,000</strong></div>
+        </div>
+        <div class="fgrid">
+          <div class="field"><label>Tarehe ya Ombi</label><input type="date" id="loanDate"/></div>
+          <div class="field"><label>Aina ya Mkopo</label>
+            <select id="loanType" onchange="updateLoanCap()">
+              <option value="Maendeleo">Mkopo wa Maendeleo (Max ×2 Hisa)</option>
+              <option value="Dharura">Mkopo wa Dharura (Max TZS 100,000)</option>
+            </select>
+          </div>
+          <div class="field"><label>Kiasi cha Mkopo (TZS)</label><input type="number" id="loanAmount" min="1"/></div>
+        </div>
+        <button class="btn btn-green" onclick="ombaLoan()">Tuma Ombi la Mkopo →</button>
+      </div>
+    </div>
+    <!-- My loans -->
+    <div class="sec">
+      <div class="sec-head"><h3>🏦 Mikopo Yangu</h3><span class="pill pill-blue" id="myLoanCount">0</span></div>
+      <div class="sec-body" style="padding:0">
+        <div class="tw"><table>
+          <thead><tr><th>Tarehe</th><th>Kiasi</th><th>Aina</th><th>Mwisho</th><th>Kilicholipwa</th><th>Bakaa</th><th>Hali</th></tr></thead>
+          <tbody id="myLoansTbody"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: MSAADA ═══ -->
+  <div class="page" id="pg-msaada">
+    <div class="sec">
+      <div class="sec-head"><h3>🤝 Omba Msaada wa Dharura</h3></div>
+      <div class="sec-body">
+        <div id="msaadaNotify" class="notify"></div>
+        <div class="al al-info" style="background:var(--bll);border:1px solid #bbdefb;border-radius:var(--rs);padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--blue);">
+          ℹ️ Msaada unatoka kwenye <strong>Hisa Jamii</strong>. Taarifa za tegemezi lazima zilingane na zilizosajiliwa.
+        </div>
+        <div class="field"><label>Aina ya Msaada</label>
+          <select id="msaadaAina">
+            <option value="Kifo cha Tegemezi">Kifo cha Tegemezi</option>
+            <option value="Hospitali ya Tegemezi">Kulazwa Hospitali kwa Tegemezi</option>
+          </select>
+        </div>
+        <div class="field"><label>Tegemezi Aliyehusika</label>
+          <select id="msaadaTegemezi"><option value="">Chagua tegemezi...</option></select>
+        </div>
+        <div class="field"><label>Jina Kamili la Tegemezi (lazima lilingane)</label>
+          <input type="text" id="msaadaJina"/>
+        </div>
+        <div class="field"><label>Tarehe ya Tukio</label><input type="date" id="msaadaTarehe"/></div>
+        <div class="field"><label>Maelezo ya Ziada (hiari)</label>
+          <textarea id="msaadaMaelezo" rows="2" style="resize:none"></textarea>
+        </div>
+        <div id="msaadaVerifyResult" style="display:none;" class="notify"></div>
+        <button class="btn btn-green" onclick="thibitishaMsaada()">🔍 Thibitisha na Tuma Ombi</button>
+      </div>
+    </div>
+    <!-- My requests -->
+    <div class="sec">
+      <div class="sec-head"><h3>📋 Maombi Yangu ya Msaada</h3></div>
+      <div class="sec-body" style="padding:0">
+        <div class="tw"><table>
+          <thead><tr><th>Tarehe</th><th>Aina</th><th>Tegemezi</th><th>Hali</th><th>Kiasi</th></tr></thead>
+          <tbody id="myMsaadaTbody"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: ADMIN ═══ -->
+  <div class="page" id="pg-admin">
+    <div class="admin-wrap">
+      <div class="admin-inner">
+        <div class="admin-title">🛡️ Dashibodi ya Uongozi</div>
+
+        <!-- Mwenyekiti: Pending approvals section -->
+        <div id="mwenyekitiIdhiniSection" style="margin-bottom:24px">
+          <div class="admin-sub">⏳ Vitendo Vinavyosubiri Idhini Yako (Mwenyekiti)</div>
+          <p style="color:var(--mt);font-size:13px">Inapakia...</p>
+        </div>
+        <hr style="border:none;border-top:1px solid var(--line);margin:4px 0 22px"/>
+        <div class="admin-cols">
+          <!-- Hisa update -->
+          <div>
+            <div class="admin-sub">Ongeza / Sasisha Hisa</div>
+            <div id="hisaNotify" class="notify"></div>
+            <div class="field"><label>Chagua Mwanachama</label><select id="adminMemSel"></select></div>
+            <div class="field"><label>Aina ya Hisa</label>
+              <select id="hisaType"><option value="maendeleo">Hisa Maendeleo</option><option value="jamii">Hisa Jamii</option></select>
+            </div>
+            <div class="field"><label>Kiasi (TZS)</label><input type="number" id="hisaKiasi" min="1"/></div>
+            <div class="field"><label>Maelezo (hiari)</label><input type="text" id="hisaMaelezo"/></div>
+            <button class="btn btn-gold btn-block" onclick="sasishaHisa()" style="display:none" id="hisa-update-btn">Sasisha na Hifadhi</button>
+          </div>
+          <!-- Pending + log -->
+          <div>
+            <div class="admin-sub">Maombi ya Usajili (<span id="pendingCount">0</span>)</div>
+            <div id="pendingList"><p style="color:var(--mt);font-size:13px">Hakuna maombi mapya.</p></div>
+            <div style="margin-top:20px" class="admin-sub">Historia ya Hisa (5 za Mwisho)</div>
+            <div id="hisaLog"><p style="color:var(--mt);font-size:13px">Bado hakuna mabadiliko.</p></div>
+          </div>
+        </div>
+
+        <!-- Loan approvals -->
+        <div style="margin-top:24px">
+          <div class="admin-sub">Maombi ya Mikopo Yanayosubiri</div>
+          <div class="tw"><table>
+            <thead><tr><th>Mwanachama</th><th>Kiasi</th><th>Aina</th><th>Tarehe</th><th>Mwisho</th><th>Kitendo</th></tr></thead>
+            <tbody id="pendingLoansTbody"></tbody>
+          </table></div>
+        </div>
+
+        <!-- Loan repayment -->
+        <div style="margin-top:24px">
+          <div class="admin-sub">Rekodi Marejesho ya Mkopo</div>
+          <div id="marejNotify" class="notify"></div>
+          <div class="fgrid">
+            <div class="field"><label>Chagua Mkopo</label><select id="marejLoanSel"></select></div>
+            <div class="field"><label>Kiasi cha Malipo (TZS)</label><input type="number" id="marejKiasi" min="1"/></div>
+            <div class="field"><label>Tarehe ya Malipo</label><input type="date" id="marejTarehe"/></div>
+          </div>
+          <button class="btn btn-teal" onclick="rekodiMarejesho()">Rekodi Malipo</button>
+        </div>
+
+        <!-- Msaada approvals -->
+        <div style="margin-top:24px">
+          <div class="admin-sub">Maombi ya Msaada Yanayosubiri</div>
+          <div class="tw"><table>
+            <thead><tr><th>Mwanachama</th><th>Aina</th><th>Tegemezi</th><th>Tarehe</th><th>Omba Kiasi</th><th>Kitendo</th></tr></thead>
+            <tbody id="pendingMsaadaTbody"></tbody>
+          </table></div>
+        </div>
+
+        <!-- All members -->
+        <div style="margin-top:24px">
+          <div class="admin-sub"><span>Wanachama Wote</span><span style="font-size:12px;color:var(--mt);font-weight:400">Bonyeza jina kuona maelezo</span></div>
+          <div class="tw"><table>
+            <thead><tr><th>#</th><th>Mwanachama</th><th>Hisa Maendeleo</th><th>Hisa Jamii</th><th>Jumla</th><th>Mikopo</th><th>Maelezo</th></tr></thead>
+            <tbody id="allMembersTbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: MATUMIZI ═══ -->
+  <div class="page" id="pg-matumizi">
+    <div class="sec">
+      <div class="sec-head"><h3>💸 Rekodi Matumizi ya Hisa Jamii</h3></div>
+      <div class="sec-body">
+        <div id="matumNotify" class="notify"></div>
+        <div class="field"><label>Aina ya Matumizi</label>
+          <select id="matumAina" onchange="toggleMatumFields()">
+            <option value="Kifo cha Tegemezi">Kifo cha Tegemezi (Msiba)</option>
+            <option value="Hospitali ya Tegemezi">Kulazwa Hospitali (Tegemezi)</option>
+            <option value="Tukio la Kikundi">Tukio la Kikundi</option>
+            <option value="Matumizi Mengine">Matumizi Mengine</option>
+          </select>
+        </div>
+        <div id="matumMemberWrap">
+          <div class="field"><label>Mwanachama Husika</label><select id="matumMemSel"></select></div>
+          <div class="field"><label>Jina la Tegemezi</label><input type="text" id="matumTegJina"/></div>
+          <div class="field"><label>Uhusiano</label>
+            <select id="matumUhusiano">
+              <option>Baba</option><option>Mama</option><option>Mwenzi</option>
+              <option>Mtoto 1</option><option>Mtoto 2</option><option>Mtoto 3</option><option>Mtoto 4</option>
+            </select>
+          </div>
+        </div>
+        <div class="fgrid">
+          <div class="field"><label>Kiasi (TZS)</label><input type="number" id="matumKiasi" min="1"/></div>
+          <div class="field"><label>Tarehe</label><input type="date" id="matumTarehe"/></div>
+        </div>
+        <div class="field"><label>Maelezo</label><input type="text" id="matumMaelezo"/></div>
+        <button class="btn btn-red" onclick="rekodiMatumizi()">💾 Hifadhi Matumizi (Italipwa Mara Moja)</button>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-head"><h3>📋 Historia ya Matumizi ya Hisa Jamii</h3></div>
+      <div class="sec-body" style="padding:0">
+        <div class="tw"><table>
+          <thead><tr><th>Tarehe</th><th>Aina</th><th>Mwanachama</th><th>Tegemezi</th><th>Kiasi</th><th>Maelezo</th><th>Admin</th></tr></thead>
+          <tbody id="matumTbody"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: RIPOTI ═══ -->
+  <div class="page" id="pg-ripoti">
+    <div class="report-wrap">
+      <div class="report-inner">
+        <div class="report-title">📋 Ripoti za Kikundi</div>
+        <div class="report-sub">Chagua aina ya ripoti na kipindi cha tarehe unachohitaji.</div>
+
+        <!-- Report type tabs -->
+        <div class="rep-tabs">
+          <button class="rep-tab active" onclick="setRepTab('hisa-m')">Hisa Maendeleo</button>
+          <button class="rep-tab" onclick="setRepTab('hisa-j')">Hisa Jamii</button>
+          <button class="rep-tab" onclick="setRepTab('mikopo')">Mikopo</button>
+          <button class="rep-tab" onclick="setRepTab('matumizi')">Matumizi</button>
+          <button class="rep-tab" onclick="setRepTab('kamili')">Ripoti Kamili</button>
+        </div>
+
+        <!-- Date filter -->
+        <div class="filter-row no-print">
+          <div class="field" style="margin:0"><label>Kuanzia Tarehe</label><input type="date" id="repFrom"/></div>
+          <div class="field" style="margin:0"><label>Hadi Tarehe</label><input type="date" id="repTo"/></div>
+          <button class="btn btn-blue" onclick="generateReport()" style="margin:0;white-space:nowrap">Zalisha Ripoti</button>
+          <button class="btn btn-outline" onclick="clearRepFilter()" style="margin:0;white-space:nowrap">Wakati Wote</button>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 20px" class="no-print">
+          <button class="btn btn-green btn-sm rep-export-btn" onclick="exportExcel()">⬇ Excel (.xlsx)</button>
+          <button class="btn btn-red btn-sm rep-export-btn" onclick="exportPDF()">⬇ PDF / Chapisha</button>
+          <span id="repRangeLabel" style="font-size:12px;color:var(--mt);padding-left:6px;align-self:center"></span>
+        </div>
+
+        <!-- Summary cards -->
+        <div class="rep-cards" id="repCards"></div>
+
+        <!-- Report table -->
+        <div id="repTableWrap"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════
+const SB='https://jdldiwhplklxxkoelvhb.supabase.co';
+const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkbGRpd2hwbGtseHhrb2VsdmhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNzM3MjcsImV4cCI6MjA4OTg0OTcyN30.Xn3a3Fhie81zs5UMp71NHspQw0xBodYI5Wh4yTJHahU';
+const SUPER_KEY='heroes2026admin';
+const DEFAULT_LEADERS=[
+  {username:'katibu',    password:'katibu123',  cheo:'Katibu',       jina:'Katibu wa Kikundi'},
+  {username:'mwekahazina',password:'hazina123', cheo:'Mwekahazina',  jina:'Mwekahazina wa Kikundi'},
+  {username:'mwenyekiti',password:'heroes123',  cheo:'Mwenyekiti',   jina:'Mwenyekiti wa Kikundi'}
+];
+const WA_MWENYEKITI  = '255763734184';
+const WA_KATIBU      = '255784126594';
+const WA_MWEKAHAZINA = '255744588486';
+const PENDING_KEY    = 'heroes_pending_actions';
+const INT_RATE=0.10;
+const MONTHS_SW=['Jan','Feb','Mac','Apr','Mei','Jun','Jul','Ago','Sep','Okt','Nov','Des'];
+const SHARE_VAL=5000;
+
+const H={'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json','Prefer':'return=representation'};
+const DB={
+  async get(t,q=''){
+    if(SB.includes('SUPABASE_URL')){console.error('Supabase URL not configured');return[];}
+    try{const r=await fetch(`${SB}/rest/v1/${t}?${q}`,{headers:H});
+    if(!r.ok){console.error('DB get error:',r.status,await r.text());return[];}
+    return r.json();}catch(e){console.error('DB get failed:',e);return[];}
+  },
+  async post(t,d){
+    if(SB.includes('SUPABASE_URL')){console.error('Supabase URL not configured');return null;}
+    try{const r=await fetch(`${SB}/rest/v1/${t}`,{method:'POST',headers:H,body:JSON.stringify(d)});
+    if(!r.ok){console.error('DB post error:',r.status,await r.text());return null;}
+    return r.json();}catch(e){console.error('DB post failed:',e);return null;}
+  },
+  async patch(t,f,d){
+    if(SB.includes('SUPABASE_URL')){console.error('Supabase URL not configured');return null;}
+    try{const r=await fetch(`${SB}/rest/v1/${t}?${f}`,{method:'PATCH',headers:H,body:JSON.stringify(d)});
+    if(!r.ok){console.error('DB patch error:',r.status,await r.text());return null;}
+    return r.json();}catch(e){console.error('DB patch failed:',e);return null;}
+  },
+  async del(t,f){
+    if(SB.includes('SUPABASE_URL')){console.error('Supabase URL not configured');return;}
+    try{await fetch(`${SB}/rest/v1/${t}?${f}`,{method:'DELETE',headers:H});}catch(e){console.error('DB del failed:',e);}
+  }
+};
+
+function dbNotConfigured(notifyId){
+  if(SB.includes('SUPABASE_URL')){
+    if(notifyId)notify(notifyId,'⚠ Mfumo bado haujaunganishwa na database. Wasiliana na msimamizi.','error');
+    return true;
+  }
+  return false;
+}
+
+// State
+let AW=[],AT=[],AH=[],AM=[],AR=[],AX=[],AMS=[];
+let currentUser=null, currentRole=null, currentRepTab='hisa-m';
+
+// ─── Role checks ──────────────────────────────────────────────────
+const isKatibu      = () => currentRole === 'Katibu';
+const isMwekahazina = () => currentRole === 'Mwekahazina';
+const isMwenyekiti  = () => currentRole === 'Mwenyekiti';
+
+// ─── Pending Actions (localStorage) ──────────────────────────────
+function getPending(){ try{ return JSON.parse(localStorage.getItem(PENDING_KEY)||'[]'); }catch(e){ return []; } }
+function savePending(arr){ localStorage.setItem(PENDING_KEY,JSON.stringify(arr)); }
+function addPending(action){
+  const arr=getPending();
+  arr.push({...action,id:Date.now().toString(),created:new Date().toISOString()});
+  savePending(arr);
+}
+function removePending(id){ savePending(getPending().filter(a=>a.id!==id)); }
+function countPending(){ return getPending().length; }
+
+// ─── WhatsApp helpers ─────────────────────────────────────────────
+function sendWA(phone,message){ window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`,'_blank'); }
+function waKatibu(msg)     { sendWA(WA_KATIBU,    msg); }
+function waMwekahazina(msg){ sendWA(WA_MWEKAHAZINA,msg); }
+function waMwenyekiti(msg) { sendWA(WA_MWENYEKITI, msg); }
+let hisaChartInst=null;
+
+// ════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════
+const $=id=>document.getElementById(id);
+const fmt=n=>'TZS '+Number(n||0).toLocaleString();
+const fmtN=n=>Number(n||0).toLocaleString();
+const leo=()=>new Date().toISOString().slice(0,10);
+const isAdmin=()=>['Mwenyekiti','Katibu','Mwekahazina'].includes(currentRole);
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  $(id).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  const map={'pg-dashibodi':0,'pg-mikopo':1,'pg-msaada':2,'pg-admin':3,'pg-matumizi':4,'pg-ripoti':5};
+  const tabs=document.querySelectorAll('.nav-tab');
+  if(tabs[map[id]])tabs[map[id]].classList.add('active');
+}
+function notify(id,msg,type){
+  const el=$(id);if(!el)return;
+  el.textContent=msg;el.className='notify notify-'+type+' show';
+  setTimeout(()=>el&&el.classList.remove('show'),6000);
+}
+function flash(msg){
+  const b=$('syncBanner');$('syncMsg').textContent=msg;
+  b.classList.add('show');setTimeout(()=>b.classList.remove('show'),5000);
+}
+function switchAuthTab(t){
+  ['loginSection','regSection','adminSection'].forEach(s=>$(s).classList.add('hidden'));
+  ['tLogin','tReg','tAdmin'].forEach(b=>$(b).classList.remove('active'));
+  $(t+'Section').classList.remove('hidden');
+  $('t'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active');
+}
+
+// ════════════════════════════════════
+// LOAD ALL DATA
+// ════════════════════════════════════
+async function loadAll(){
+  const [w,t,h,m,r,x,ms]=await Promise.all([
+    DB.get('wanachama','order=jina_kamili.asc'),
+    DB.get('tegemezi','order=created_at.asc'),
+    DB.get('hisa_history','order=created_at.desc'),
+    DB.get('mikopo','order=created_at.desc'),
+    DB.get('marejesho','order=created_at.desc'),
+    DB.get('matumizi','order=created_at.desc'),
+    DB.get('maombi_msaada','order=created_at.desc')
+  ]);
+  AW=Array.isArray(w)?w:[];
+  AT=Array.isArray(t)?t:[];
+  AH=Array.isArray(h)?h:[];
+  AM=Array.isArray(m)?m:[];
+  AR=Array.isArray(r)?r:[];
+  AX=Array.isArray(x)?x:[];
+  AMS=Array.isArray(ms)?ms:[];
+  renderAll();
+}
+
+// ════════════════════════════════════
+// AUTH
+// ════════════════════════════════════
+async function loginUser(){
+  if(dbNotConfigured('loginNotify'))return;
+  const u=$('lUser').value.trim(),p=$('lPass').value;
+  if(!u||!p){notify('loginNotify','Jaza jina la mtumiaji na nywila!','error');return;}
+  notify('loginNotify','Inaingia...','info');
+  const r=await DB.get('wanachama',`username=eq.${u}&password=eq.${p}`);
+  if(!Array.isArray(r)||!r[0]){notify('loginNotify','Jina la mtumiaji au nywila si sahihi.','error');return;}
+  const m=r[0];
+  if(m.status==='pending'){notify('loginNotify','⏳ Subiri kiongozi akukubalie kwanza.','warn');return;}
+  if(m.status==='rejected'){notify('loginNotify','❌ Ombi lako limekataliwa. Wasiliana na kiongozi.','error');return;}
+  currentUser=m;currentRole=m.cheo;
+  startApp();
+}
+
+async function loginAdmin(){
+  const u=$('alUser').value.trim(),p=$('alPass').value;
+  if(!u||!p){notify('adminAuthNotify','Jaza taarifa zote!','error');return;}
+  // Check default leader credentials first (works even if DB is unreachable)
+  const def=DEFAULT_LEADERS.find(d=>d.username===u&&d.password===p);
+  if(def){
+    currentUser={id:'default-'+def.cheo.toLowerCase(),jina_kamili:def.jina,username:def.username,cheo:def.cheo,status:'approved',hisa_maendeleo:0,hisa_jamii:0};
+    currentRole=def.cheo;
+    startApp();return;
+  }
+  if(dbNotConfigured('adminAuthNotify'))return;
+  const r=await DB.get('wanachama',`username=eq.${u}&password=eq.${p}`);
+  if(!Array.isArray(r)||!r[0]){notify('adminAuthNotify','Taarifa si sahihi.','error');return;}
+  const m=r[0];
+  if(!['Mwenyekiti','Katibu','Mwekahazina'].includes(m.cheo)){notify('adminAuthNotify','Akaunti hii si ya kiongozi.','error');return;}
+  currentUser=m;currentRole=m.cheo;
+  startApp();
+}
+
+async function seedDefaultLeaders(){
+  if(dbNotConfigured('adminAuthNotify'))return;
+  notify('adminAuthNotify','Inaunda akaunti za msingi...','info');
+  let created=0,skipped=0;
+  for(const d of DEFAULT_LEADERS){
+    const exists=await DB.get('wanachama',`username=eq.${d.username}`);
+    if(Array.isArray(exists)&&exists.length>0){skipped++;continue;}
+    const r=await DB.post('wanachama',{jina_kamili:d.jina,namba_simu:'admin-'+d.cheo.toLowerCase(),username:d.username,password:d.password,cheo:d.cheo,status:'approved'});
+    if(r)created++;
+  }
+  notify('adminAuthNotify',`Imekamilika! Akaunti mpya: ${created}, zilizokuwepo: ${skipped}.`,'success');
+}
+
+async function registerAdmin(){
+  if(dbNotConfigured('adminAuthNotify'))return;
+  const key=$('superKey').value;
+  if(key!==SUPER_KEY){notify('adminAuthNotify','Nywila ya usimamizi si sahihi!','error');return;}
+  const u=$('aUser').value.trim(),p=$('aPass').value,cheo=$('adminCheo').value;
+  if(!u||!p){notify('adminAuthNotify','Jaza jina la mtumiaji na nywila!','error');return;}
+  if(u.length<4){notify('adminAuthNotify','Jina la mtumiaji liwe na herufi angalau 4.','error');return;}
+  if(p.length<6){notify('adminAuthNotify','Nywila iwe na herufi angalau 6.','error');return;}
+  const exists=await DB.get('wanachama',`username=eq.${u}`);
+  if(Array.isArray(exists)&&exists.length>0){notify('adminAuthNotify','Jina la mtumiaji limechukuliwa!','error');return;}
+  const r=await DB.post('wanachama',{jina_kamili:cheo+' '+u,namba_simu:'admin-'+Date.now(),username:u,password:p,cheo,status:'approved'});
+  if(r&&Array.isArray(r)&&r[0]){notify('adminAuthNotify',`✅ ${cheo} amesajiliwa kwa mafanikio!`,'success');$('aUser').value='';$('aPass').value='';$('superKey').value='';}
+  else if(r===null){notify('adminAuthNotify','Hitilafu ya mtandao. Angalia muunganisho wako.','error');}
+  else{notify('adminAuthNotify','Hitilafu. Jaribu tena.','error');}
+}
+
+async function doRegister(){
+  if(dbNotConfigured('regNotify'))return;
+  const jina=$('regJina').value.trim(),simu=$('regSimu').value.trim();
+  const user=$('regUser').value.trim(),pass=$('regPass').value,pass2=$('regPass2').value;
+  if(jina.split(' ').filter(w=>w).length<2){notify('regNotify','Weka jina kamili (angalau maneno mawili).','error');return;}
+  if(simu.length<9){notify('regNotify','Weka namba sahihi ya simu.','error');return;}
+  if(user.length<4){notify('regNotify','Jina la mtumiaji liwe na herufi angalau 4.','error');return;}
+  if(pass.length<6){notify('regNotify','Nywila iwe na herufi angalau 6.','error');return;}
+  if(pass!==pass2){notify('regNotify','Nywila mbili hazifanani.','error');return;}
+  notify('regNotify','Inatuma...','info');
+  const eu=await DB.get('wanachama',`username=eq.${user}`);
+  if(Array.isArray(eu)&&eu.length>0){notify('regNotify','Jina la mtumiaji limechukuliwa!','error');return;}
+  const es=await DB.get('wanachama',`namba_simu=eq.${simu}`);
+  if(Array.isArray(es)&&es.length>0){notify('regNotify','Namba hii ya simu imeshasajiliwa!','error');return;}
+  const r=await DB.post('wanachama',{jina_kamili:jina,namba_simu:simu,username:user,password:pass,cheo:'Mwanachama',status:'pending'});
+  if(!Array.isArray(r)||!r[0]){notify('regNotify','Hitilafu. Jaribu tena.','error');return;}
+  const mid=r[0].id;
+  const tegMap=[
+    {f:'teg-baba',u:'Baba'},{f:'teg-mama',u:'Mama'},{f:'teg-mwenzi',u:'Mwenzi'},
+    {f:'teg-mtoto1',u:'Mtoto 1'},{f:'teg-mtoto2',u:'Mtoto 2'},
+    {f:'teg-mtoto3',u:'Mtoto 3'},{f:'teg-mtoto4',u:'Mtoto 4'}
+  ];
+  for(const t of tegMap){const v=$(t.f).value.trim();if(v)await DB.post('tegemezi',{mwanachama_id:mid,uhusiano:t.u,jina_kamili:v});}
+  notify('regNotify','✅ Ombi limetumwa! Katibu atataarifiwa kukukubali. Subiri idhini.','success');
+  // Notify Katibu via WhatsApp
+  const waMsg = `*THE HEROES — OMBI JIPYA LA USAJILI* 📋\n\nHabari Katibu,\n\nKuna ombi jipya la kujiunga kikundi.\n\n👤 *Jina:* ${jina}\n📞 *Simu:* ${simu}\n🔑 *Username:* ${user}\n📅 *Tarehe:* ${new Date().toLocaleString('sw-TZ')}\n\nTafadhali ingia kwenye mfumo ukikubali au kukataa ombi hili.\n\n— Mfumo wa THE HEROES`;
+  waKatibu(waMsg);
+  ['regJina','regSimu','regUser','regPass','regPass2','teg-baba','teg-mama','teg-mwenzi','teg-mtoto1','teg-mtoto2','teg-mtoto3','teg-mtoto4'].forEach(id=>{const el=$(id);if(el)el.value='';});
+}
+
+function quickLogin(u,p){$('alUser').value=u;$('alPass').value=p;loginAdmin();}
+function doLogout(){currentUser=null;currentRole=null;$('authScreen').style.display='flex';$('mainApp').style.display='none';}
+
+function startApp(){
+  $('authScreen').style.display='none';
+  $('mainApp').style.display='block';
+  $('loanDate').value=leo();
+  $('marejTarehe').value=leo();
+  $('matumTarehe').value=leo();
+  $('msaadaTarehe').value=leo();
+  loadAll().then(()=>{buildChartYears();setTimeout(()=>renderChart(),200);});
+  setInterval(loadAll,10000);
+}
+
+// ════════════════════════════════════
+// RENDER ALL
+// ════════════════════════════════════
+function renderAll(){
+  renderHeader();
+  renderDashibodi();
+  renderMikopo();
+  renderMsaada();
+  if(isAdmin()){
+    renderAdmin();
+    renderMatumizi();
+    generateReport();
+  }
+}
+
+function renderHeader(){
+  $('welcomeName').textContent=currentUser.jina_kamili.split(' ')[0];
+  $('userBadge').textContent=currentRole;
+  const me=AW.find(w=>w.id===currentUser.id)||currentUser;
+  $('userHisaM').textContent=fmt(me.hisa_maendeleo);
+  $('userHisaJ').textContent=fmt(me.hisa_jamii);
+  // Show/hide tabs by role
+  document.querySelectorAll('.admin-tab').forEach(t=>t.classList.add('hidden'));
+  document.querySelectorAll('.admin-only').forEach(el=>el.style.display='none');
+  $('memberInfoCard').style.display='block';
+
+  if(isAdmin()){
+    $('memberInfoCard').style.display='none';
+    // Show admin-only elements
+    document.querySelectorAll('.admin-only').forEach(el=>el.style.display='');
+  }
+
+  // Role-specific tab visibility
+  // All admins see: Dashibodi, Mikopo (read), Msaada (read)
+  // Katibu: Uongozi (wanachama only)
+  // Mwekahazina: Uongozi (hisa+madai), Matumizi, Ripoti
+  // Mwenyekiti: Uongozi (idhini), Ripoti
+  const adminTabs = document.querySelectorAll('.admin-tab');
+  if(isAdmin()) adminTabs.forEach(t=>t.classList.remove('hidden'));
+
+  // Hide tabs not relevant to each role
+  if(isKatibu()){
+    // Katibu: hides Matumizi and Ripoti tabs
+    const allTabs = document.querySelectorAll('.nav-tab');
+    allTabs.forEach(t=>{
+      if(t.textContent.includes('Matumizi')||t.textContent.includes('Ripoti'))
+        t.classList.add('hidden');
+    });
+  }
+  if(isMwenyekiti()){
+    // Mwenyekiti: hides Matumizi
+    const allTabs = document.querySelectorAll('.nav-tab');
+    allTabs.forEach(t=>{
+      if(t.textContent.includes('Matumizi'))
+        t.classList.add('hidden');
+    });
+  }
+  // Update pending badge on Uongozi tab
+  renderPendingBadge();
+}
+
+// ════════════════════════════════════
+// DASHIBODI
+// ════════════════════════════════════
+function renderDashibodi(){
+  const approved=AW.filter(w=>w.status==='approved');
+  const tM=approved.reduce((s,w)=>s+w.hisa_maendeleo,0);
+  const tJ=approved.reduce((s,w)=>s+w.hisa_jamii,0);
+  const totalXout=AX.reduce((s,x)=>s+x.kiasi,0);
+  const netJ=Math.max(0,tJ-totalXout);
+  const activeMikopo=AM.filter(m=>m.status==='approved');
+  const tMikopo=activeMikopo.reduce((s,m)=>s+m.kiasi,0);
+  const faida=tMikopo*INT_RATE;
+  const adminCount=approved.filter(w=>['Mwenyekiti','Katibu','Mwekahazina'].includes(w.cheo)).length||3;
+  const memberOnly=approved.filter(w=>!['Mwenyekiti','Katibu','Mwekahazina'].includes(w.cheo));
+  const gawioK=faida*0.10/Math.max(adminCount,1);
+  const gawioM=faida*0.90/Math.max(memberOnly.length,1);
+  $('gHisaM').textContent=fmt(tM);
+  $('gHisaJ').textContent=fmt(netJ)+' (Baada ya matumizi)';
+  $('gMikopo').textContent=fmt(tMikopo);
+  $('gFaida').textContent=fmt(faida);
+  $('gGawioM').textContent=fmt(gawioM);
+  $('gGawioK').textContent=fmt(gawioK);
+  updateLoanCap();
+}
+
+// ════════════════════════════════════
+// MIKOPO
+// ════════════════════════════════════
+function updateLoanCap(){
+  const me=AW.find(w=>w.id===currentUser?.id)||{hisa_maendeleo:0};
+  $('loanCapM').textContent=fmt(me.hisa_maendeleo*2);
+}
+
+async function ombaLoan(){
+  const tarehe=$('loanDate').value,aina=$('loanType').value,kiasi=parseInt($('loanAmount').value);
+  if(!tarehe||!kiasi||kiasi<1){notify('loanNotify','Jaza tarehe na kiasi sahihi!','error');return;}
+  const me=AW.find(w=>w.id===currentUser.id)||{hisa_maendeleo:0};
+  if(aina==='Maendeleo'&&kiasi>me.hisa_maendeleo*2){notify('loanNotify',`Kiwango cha juu ni ${fmt(me.hisa_maendeleo*2)} (Mara mbili ya Hisa zako).`,'error');return;}
+  if(aina==='Dharura'&&kiasi>100000){notify('loanNotify','Mkopo wa Dharura hauzidi TZS 100,000.','error');return;}
+  const active=AM.find(m=>m.mwanachama_id===currentUser.id&&m.aina===aina&&m.status!=='rejected');
+  if(active){notify('loanNotify',`Tayari una mkopo wa ${aina} unaosubiri.`,'error');return;}
+  const miezi=kiasi<500000?3:6;
+  const d=new Date(tarehe);d.setMonth(d.getMonth()+miezi);
+  const r=await DB.post('mikopo',{mwanachama_id:currentUser.id,kiasi,aina,tarehe,tarehe_mwisho:d.toISOString().slice(0,10),miezi,status:'pending',kiasi_kilicholipwa:0});
+  if(Array.isArray(r)&&r[0]){
+    notify('loanNotify','✅ Ombi limetumwa! Mwekahazina atakipitia kwanza.','success');
+    $('loanAmount').value='';
+    // Notify Mwekahazina via WhatsApp
+    const waMsg=`*THE HEROES — OMBI LA MKOPO* 💰\n\nHabari Mwekahazina,\n\nKuna ombi jipya la mkopo linalosubiri uhakiki wako.\n\n👤 *Mwanachama:* ${currentUser.jina_kamili}\n💵 *Kiasi:* ${fmt(kiasi)}\n📋 *Aina:* ${aina}\n📅 *Tarehe:* ${tarehe}\n⏳ *Mwisho:* ${d.toISOString().slice(0,10)}\n\nTafadhali ingia mfumo ukihakiki na kuipeleka kwa Mwenyekiti.\n\n— Mfumo wa THE HEROES`;
+    waMwekahazina(waMsg);
+    await loadAll();
+  }
+  else{notify('loanNotify','Hitilafu. Jaribu tena.','error');}
+}
+
+function renderMikopo(){
+  const myL=AM.filter(m=>m.mwanachama_id===currentUser?.id);
+  $('myLoanCount').textContent=myL.length+' Mikopo';
+  $('myLoansTbody').innerHTML=myL.length===0?`<tr><td colspan="7" class="empty-td">Bado huna mikopo yoyote.</td></tr>`:
+    myL.map(l=>{
+      const repaid=AR.filter(r=>r.mkopo_id===l.id).reduce((s,r)=>s+r.kiasi,0);
+      const bakaa=Math.max(0,l.kiasi-repaid);
+      const over=l.status==='approved'&&l.tarehe_mwisho<leo();
+      return`<tr style="${over?'background:#fff8f8':''}">
+        <td>${l.tarehe}</td><td><strong>${fmt(l.kiasi)}</strong></td>
+        <td><span class="pill pill-blue">${l.aina}</span></td>
+        <td style="color:var(--red);font-weight:700">${l.tarehe_mwisho}${over?' ⚠':''}</td>
+        <td>${fmt(repaid)}</td><td>${fmt(bakaa)}</td>
+        <td><span class="pill ${l.status==='approved'?'pill-green':l.status==='pending'?'pill-amber':'pill-red'}">${l.status==='approved'?'Imeidhinishwa':l.status==='pending'?'Inasubiri':'Imekataliwa'}</span></td>
+      </tr>`;
+    }).join('');
+}
+
+// ════════════════════════════════════
+// MSAADA
+// ════════════════════════════════════
+function renderMsaada(){
+  const myTeg=AT.filter(t=>t.mwanachama_id===currentUser?.id);
+  const sel=$('msaadaTegemezi');
+  sel.innerHTML='<option value="">Chagua tegemezi...</option>';
+  myTeg.forEach(t=>{const o=document.createElement('option');o.value=t.id;o.dataset.jina=t.jina_kamili;o.dataset.uhusiano=t.uhusiano;o.textContent=`${t.uhusiano} — ${t.jina_kamili}`;sel.appendChild(o);});
+  const myMS=AMS.filter(m=>m.mwanachama_id===currentUser?.id);
+  $('myMsaadaTbody').innerHTML=myMS.length===0?`<tr><td colspan="5" class="empty-td">Bado hujafanya ombi lolote.</td></tr>`:
+    myMS.map(m=>`<tr>
+      <td>${m.tarehe}</td>
+      <td>${m.aina}</td>
+      <td>${m.tegemezi_jina} (${m.uhusiano})</td>
+      <td><span class="pill ${m.status==='pending'?'pill-amber':m.status==='approved'?'pill-green':'pill-red'}">${m.status==='pending'?'Inasubiri':m.status==='approved'?'Imeidhinishwa':'Imekataliwa'}</span></td>
+      <td>${m.kiasi_kilichoombwa?fmt(m.kiasi_kilichoombwa):'—'}</td>
+    </tr>`).join('');
+}
+
+async function thibitishaMsaada(){
+  const tegId=$('msaadaTegemezi').value,jinaInput=$('msaadaJina').value.trim();
+  const aina=$('msaadaAina').value,tarehe=$('msaadaTarehe').value,maelezo=$('msaadaMaelezo').value.trim();
+  const result=$('msaadaVerifyResult');
+  if(!tegId){result.style.display='block';result.className='notify notify-error show';result.textContent='Chagua tegemezi kwanza.';return;}
+  if(!jinaInput){result.style.display='block';result.className='notify notify-error show';result.textContent='Weka jina la tegemezi.';return;}
+  const sel=$('msaadaTegemezi');const opt=sel.options[sel.selectedIndex];
+  const jinaSajiliwa=opt.dataset.jina,uhusiano=opt.dataset.uhusiano;
+  if(jinaInput.toLowerCase().trim()!==jinaSajiliwa.toLowerCase().trim()){
+    result.style.display='block';result.className='notify notify-error show';
+    result.textContent=`❌ Jina hazilingani! Jina lililосajiliwa ni "${jinaSajiliwa}". Andika kama lilivyosajiliwa.`;return;
+  }
+  const existing=AMS.find(m=>m.mwanachama_id===currentUser.id&&m.uhusiano===uhusiano&&m.status==='pending');
+  if(existing){result.style.display='block';result.className='notify notify-error show';result.textContent='Tayari una ombi la '+uhusiano+' linalosubiri.';return;}
+  result.style.display='block';result.className='notify notify-info show';result.textContent='✅ Taarifa zimethibitishwa! Inatuma...';
+  const r=await DB.post('maombi_msaada',{mwanachama_id:currentUser.id,aina,tegemezi_jina:jinaSajiliwa,uhusiano,maelezo,tarehe,status:'pending',imehakikishwa:true});
+  if(Array.isArray(r)&&r[0]){
+    result.className='notify notify-success show';
+    result.textContent='✅ Ombi limetumwa! Mwekahazina atakipitia.';
+    // Notify Mwekahazina via WhatsApp
+    const waMsg=`*THE HEROES — OMBI LA MSAADA* 🤝\n\nHabari Mwekahazina,\n\nKuna ombi jipya la msaada linalosubiri uhakiki wako.\n\n👤 *Mwanachama:* ${currentUser.jina_kamili}\n📋 *Aina:* ${aina}\n👨‍👩‍👧 *Tegemezi:* ${jinaSajiliwa} (${uhusiano})\n📅 *Tarehe ya Tukio:* ${tarehe}\n\nTafadhali ingia mfumo ukihakiki na kuipeleka kwa Mwenyekiti.\n\n— Mfumo wa THE HEROES`;
+    waMwekahazina(waMsg);
+    $('msaadaJina').value='';$('msaadaMaelezo').value='';$('msaadaTegemezi').value='';
+    await loadAll();
+  }
+}
+
+// ════════════════════════════════════
+// ADMIN
+// ════════════════════════════════════
+function renderAdmin(){
+  if(!isAdmin())return;
+  // Render Mwenyekiti pending approvals section
+  renderMwenyekitiIdhini();
+  const approved=AW.filter(w=>w.status==='approved'&&!['Mwenyekiti','Katibu','Mwekahazina'].includes(w.cheo));
+  // Show hisa update section only for Mwekahazina
+  const hisaBtn=$('hisa-update-btn');
+  if(hisaBtn)hisaBtn.style.display=isMwekahazina()?'block':'none';
+  // Member select
+  const mSel=$('adminMemSel');const prev=mSel.value;
+  mSel.innerHTML='<option value="">— Chagua Mwanachama —</option>';
+  approved.forEach(w=>{const o=document.createElement('option');o.value=w.id;o.textContent=w.jina_kamili;mSel.appendChild(o);});
+  if(prev)mSel.value=prev;
+  // Marejo loan select
+  const lSel=$('marejLoanSel');const lPrev=lSel.value;
+  lSel.innerHTML='<option value="">— Chagua Mkopo —</option>';
+  AM.filter(m=>m.status==='approved').forEach(m=>{
+    const mem=AW.find(w=>w.id===m.mwanachama_id)||{};
+    const repaid=AR.filter(r=>r.mkopo_id===m.id).reduce((s,r)=>s+r.kiasi,0);
+    const bakaa=m.kiasi-repaid;
+    if(bakaa>0){const o=document.createElement('option');o.value=m.id;o.textContent=`${mem.jina_kamili} — ${fmt(m.kiasi)} (Bakaa: ${fmt(bakaa)})`;lSel.appendChild(o);}
+  });
+  if(lPrev)lSel.value=lPrev;
+  // Pending registrations
+  const pending=AW.filter(w=>w.status==='pending');
+  $('pendingCount').textContent=pending.length;
+  $('pendingList').innerHTML=pending.length===0?'<p style="color:var(--mt);font-size:13px">Hakuna maombi mapya.</p>':
+    pending.map(w=>`<div class="pending-item">
+      <div><div class="pending-name">${w.jina_kamili}</div><div class="pending-meta">${w.namba_simu} · @${w.username}</div></div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-green btn-sm" onclick="idhinishaMwanachama('${w.id}')">✓ Kubali</button>
+        <button class="btn btn-red btn-sm" onclick="kataaMwanachama('${w.id}')">✕</button>
+      </div>
+    </div>`).join('');
+  // Hisa log
+  const recent=AH.slice(0,5);
+  $('hisaLog').innerHTML=recent.length===0?'<p style="color:var(--mt);font-size:13px">Bado hakuna mabadiliko.</p>':
+    recent.map(h=>`<div class="log-item">
+      <div><strong>${h.admin_jina||'Admin'}</strong><span class="log-date"> → ${h.aina==='maendeleo'?'Maendeleo':'Jamii'} +${fmt(h.kiasi)} (${h.mwanachama_id})</span></div>
+      <div class="log-date">${h.tarehe}</div>
+    </div>`).join('');
+  // Pending loans
+  const pendingL=isMwenyekiti()?AM.filter(m=>m.status==='reviewed'):AM.filter(m=>m.status==='pending');
+  $('pendingLoansTbody').innerHTML=pendingL.length===0?`<tr><td colspan="6" class="empty-td">Hakuna maombi yanayosubiri.</td></tr>`:
+    pendingL.map(l=>{const mem=AW.find(w=>w.id===l.mwanachama_id)||{};return`<tr>
+      <td><strong>${mem.jina_kamili||'—'}</strong></td><td>${fmt(l.kiasi)}</td>
+      <td><span class="pill pill-blue">${l.aina}</span></td><td>${l.tarehe}</td>
+      <td style="color:var(--red)">${l.tarehe_mwisho}</td>
+      <td>
+        ${isMwekahazina()?`<button class="btn btn-blue btn-sm" onclick="hakikiMkopo('${l.id}')">🔍 Hakiki → Mwenyekiti</button>`:isMwenyekiti()&&l.status==='reviewed'?`<button class="btn btn-green btn-sm" onclick="idhinishaMkopo('${l.id}')">✓ Idhinisha</button>`:''}
+        <button class="btn btn-red btn-sm" onclick="kataaMkopo('${l.id}')" style="margin-left:4px">✕ Kataa</button>
+      </td>
+    </tr>`;}).join('');
+  // Pending msaada
+  const pendingMS=isMwenyekiti()?AMS.filter(m=>m.status==='reviewed'):AMS.filter(m=>m.status==='pending');
+  $('pendingMsaadaTbody').innerHTML=pendingMS.length===0?`<tr><td colspan="6" class="empty-td">Hakuna maombi yanayosubiri.</td></tr>`:
+    pendingMS.map(ms=>{const mem=AW.find(w=>w.id===ms.mwanachama_id)||{};return`<tr>
+      <td><strong>${mem.jina_kamili||'—'}</strong></td><td>${ms.aina}</td>
+      <td>${ms.tegemezi_jina} (${ms.uhusiano})</td><td>${ms.tarehe}</td>
+      <td><input type="number" id="msKiasi_${ms.id}" placeholder="Kiasi" style="width:120px;padding:6px;border:1px solid var(--line);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px"/></td>
+      <td style="display:flex;gap:4px">
+        ${isMwekahazina()?`<button class="btn btn-blue btn-sm" onclick="hakikiMsaada('${ms.id}')">🔍 Hakiki → Mwenyekiti</button>`:isMwenyekiti()&&ms.status==='reviewed'?`<button class="btn btn-green btn-sm" onclick="idhinishaMsaada('${ms.id}')">✓ Idhinisha</button>`:''}
+        <button class="btn btn-red btn-sm" onclick="kataaMsaada('${ms.id}')">✕</button>
+      </td>
+    </tr>`;}).join('');
+  // All members table
+  $('allMembersTbody').innerHTML=AW.filter(w=>w.status==='approved').map((w,i)=>{
+    const mL=AM.filter(m=>m.mwanachama_id===w.id&&m.status!=='rejected').length;
+    return`<tr>
+      <td>${i+1}</td>
+      <td><strong style="cursor:pointer;color:var(--blue);text-decoration:underline dotted" onclick="openMemberDetail('${w.id}')">${w.jina_kamili}</strong></td>
+      <td>${fmt(w.hisa_maendeleo)}</td><td>${fmt(w.hisa_jamii)}</td>
+      <td><strong>${fmt(w.hisa_maendeleo+w.hisa_jamii)}</strong></td>
+      <td>${mL>0?`<span class="pill pill-amber">${mL} mkopo</span>`:'<span class="pill pill-green">Wazi</span>'}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-blue btn-sm" onclick="openMemberDetail('${w.id}')">Maelezo</button>
+        ${isKatibu()?`<button class="btn btn-red btn-sm" onclick="pendingFutaMwanachama('${w.id}','${w.jina_kamili.replace(/'/g,"\'")}')">🗑 Futa</button>`:''}
+        ${isMwenyekiti()?`<button class="btn btn-red btn-sm" onclick="futaMwanachamaDirect('${w.id}','${w.jina_kamili.replace(/'/g,"\'")}')">🗑 Futa</button>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function sasishaHisa(){
+  if(!isMwekahazina()){notify('hisaNotify','Kusasisha hisa ni kazi ya Mwekahazina pekee.','error');return;}
+  const mid=$('adminMemSel').value,aina=$('hisaType').value,kiasi=parseInt($('hisaKiasi').value),maelezo=$('hisaMaelezo').value.trim();
+  if(!mid){notify('hisaNotify','Chagua mwanachama kwanza!','error');return;}
+  if(!kiasi||kiasi<1){notify('hisaNotify','Weka kiasi sahihi!','error');return;}
+  const mem=AW.find(w=>w.id===mid);if(!mem)return;
+  // Add to pending for Mwenyekiti approval
+  addPending({
+    type:'hisa',
+    title:`Sasisha Hisa za ${mem.jina_kamili}`,
+    desc:`Aina: ${aina==='maendeleo'?'Hisa Maendeleo':'Hisa Jamii'} · Kiasi: ${fmt(kiasi)}${maelezo?' · '+maelezo:''}`,
+    data:{mid,aina,kiasi,maelezo,mem_jina:mem.jina_kamili},
+    by:currentUser.jina_kamili,role:'Mwekahazina'
+  });
+  notify('hisaNotify',`✅ Ombi la kusasisha hisa za ${mem.jina_kamili} limepelekwa kwa Mwenyekiti kwa idhini!`,'success');
+  $('hisaKiasi').value='';$('hisaMaelezo').value='';
+  // Notify Mwenyekiti via WhatsApp
+  waMwenyekiti(`*THE HEROES — IDHINI YA HISA INAHITAJIKA* 💰\n\nHabari Mwenyekiti,\n\nMwekahazina ameandika ombi la kusasisha hisa.\n\n👤 *Mwanachama:* ${mem.jina_kamili}\n📊 *Aina:* ${aina==='maendeleo'?'Hisa Maendeleo':'Hisa Jamii'}\n💵 *Kiasi:* ${fmt(kiasi)}\n${maelezo?'📝 *Maelezo:* '+maelezo+'\n':''}\nTafadhali ingia mfumo utoe idhini.\n\n— Mfumo wa THE HEROES`);
+  await loadAll();
+}
+
+async function idhinishaMwanachama(id){
+  if(!isKatibu()&&!isMwenyekiti()){notify('hisaNotify','Idhini ya usajili ni kazi ya Katibu.','error');return;}
+  await DB.patch('wanachama',`id=eq.${id}`,{status:'approved'});
+  await loadAll();flash('Mwanachama amekubaliwa!');
+  // Notify Mwenyekiti that a new member was approved
+  const mem=AW.find(w=>w.id===id)||{};
+  waMwenyekiti(`*THE HEROES — MWANACHAMA MPYA AMEIDHINISHWA* ✅\n\nKatibu amekubali ombi la usajili.\n\n👤 *Jina:* ${mem.jina_kamili||'—'}\n📞 *Simu:* ${mem.namba_simu||'—'}\n\n— Mfumo wa THE HEROES`);
+}
+async function kataaMwanachama(id){
+  if(!isKatibu()&&!isMwenyekiti()){notify('hisaNotify','Kukataa ombi ni kazi ya Katibu.','error');return;}
+  if(!confirm('Kataa ombi hili?'))return;
+  await DB.patch('wanachama',`id=eq.${id}`,{status:'rejected'});
+  await loadAll();
+}
+async function hakikiMkopo(id){
+  // Mwekahazina reviews → sends to Mwenyekiti for final approval
+  if(!isMwekahazina()){notify('marejNotify','Uhakiki wa mkopo ni kazi ya Mwekahazina.','error');return;}
+  const l=AM.find(m=>m.id===id);if(!l)return;
+  const mem=AW.find(w=>w.id===l.mwanachama_id)||{};
+  addPending({
+    type:'mkopo',
+    title:`Mkopo wa ${mem.jina_kamili} — ${fmt(l.kiasi)}`,
+    desc:`Aina: ${l.aina} · Tarehe: ${l.tarehe} · Mwisho: ${l.tarehe_mwisho}`,
+    data:{mkopo_id:id,kiasi:l.kiasi,mem_jina:mem.jina_kamili},
+    by:currentUser.jina_kamili,role:'Mwekahazina'
+  });
+  // Mark as reviewed
+  await DB.patch('mikopo',`id=eq.${id}`,{status:'reviewed',admin_jina:currentUser.jina_kamili});
+  flash(`Mkopo umehakikiwa! Umepelekwa kwa Mwenyekiti.`);
+  // Notify Mwenyekiti via WhatsApp
+  waMwenyekiti(`*THE HEROES — IDHINI YA MKOPO INAHITAJIKA* 💰\n\nHabari Mwenyekiti,\n\nMwekahazina amehakiki mkopo unaohitaji idhini yako ya mwisho.\n\n👤 *Mwanachama:* ${mem.jina_kamili}\n💵 *Kiasi:* ${fmt(l.kiasi)}\n📋 *Aina:* ${l.aina}\n📅 *Mwisho:* ${l.tarehe_mwisho}\n\nTafadhali ingia mfumo utoe idhini.\n\n— Mfumo wa THE HEROES`);
+  await loadAll();
+}
+
+async function idhinishaMkopo(id){
+  // Mwenyekiti gives final approval
+  if(!isMwenyekiti()){notify('hisaNotify','Idhini ya mwisho ya mkopo ni kazi ya Mwenyekiti.','error');return;}
+  const l=AM.find(m=>m.id===id);if(!l)return;
+  await DB.patch('mikopo',`id=eq.${id}`,{status:'approved',admin_jina:currentUser.jina_kamili});
+  // Remove from pending if exists
+  const pending=getPending();
+  const pa=pending.find(p=>p.type==='mkopo'&&p.data.mkopo_id===id);
+  if(pa)removePending(pa.id);
+  await loadAll();flash(`Mkopo wa ${fmt(l.kiasi)} umeidhinishwa!`);
+}
+
+async function kataaMkopo(id){
+  if(!isMwekahazina()&&!isMwenyekiti()){notify('hisaNotify','Hakuna ruhusa.','error');return;}
+  if(!confirm('Kataa mkopo huu?'))return;
+  await DB.patch('mikopo',`id=eq.${id}`,{status:'rejected'});
+  const pending=getPending();
+  const pa=pending.find(p=>p.type==='mkopo'&&p.data.mkopo_id===id);
+  if(pa)removePending(pa.id);
+  await loadAll();
+}
+async function hakikiMsaada(msId){
+  // Mwekahazina reviews → sends to Mwenyekiti
+  if(!isMwekahazina()){notify('hisaNotify','Uhakiki wa msaada ni kazi ya Mwekahazina.','error');return;}
+  const kiasi=parseInt($('msKiasi_'+msId)?.value)||0;
+  if(!kiasi||kiasi<1){alert('Weka kiasi cha msaada kwanza!');return;}
+  const ms=AMS.find(m=>m.id===msId);if(!ms)return;
+  const mem=AW.find(w=>w.id===ms.mwanachama_id)||{};
+  // Mark as reviewed
+  await DB.patch('maombi_msaada',`id=eq.${msId}`,{status:'reviewed',kiasi_kilichoombwa:kiasi,admin_jina:currentUser.jina_kamili});
+  addPending({
+    type:'msaada',
+    title:`Msaada: ${mem.jina_kamili} — ${ms.aina}`,
+    desc:`Tegemezi: ${ms.tegemezi_jina} (${ms.uhusiano}) · Kiasi: ${fmt(kiasi)}`,
+    data:{ms_id:msId,kiasi,ms_aina:ms.aina,ms_mwanachama_id:ms.mwanachama_id,ms_jina:ms.tegemezi_jina,ms_uhusiano:ms.uhusiano,ms_maelezo:ms.maelezo||'',mem_jina:mem.jina_kamili},
+    by:currentUser.jina_kamili,role:'Mwekahazina'
+  });
+  flash('Ombi la msaada limehakikiwa! Limepelekwa kwa Mwenyekiti.');
+  // Notify Mwenyekiti
+  waMwenyekiti(`*THE HEROES — IDHINI YA MSAADA INAHITAJIKA* 🤝\n\nHabari Mwenyekiti,\n\nMwekahazina amehakiki ombi la msaada unaohitaji idhini yako ya mwisho.\n\n👤 *Mwanachama:* ${mem.jina_kamili}\n📋 *Aina:* ${ms.aina}\n👨‍👩‍👧 *Tegemezi:* ${ms.tegemezi_jina} (${ms.uhusiano})\n💵 *Kiasi:* ${fmt(kiasi)}\n\nTafadhali ingia mfumo utoe idhini.\n\n— Mfumo wa THE HEROES`);
+  await loadAll();
+}
+
+async function idhinishaMsaada(msId){
+  // Mwenyekiti gives final approval
+  if(!isMwenyekiti()){notify('hisaNotify','Idhini ya mwisho ya msaada ni kazi ya Mwenyekiti.','error');return;}
+  const ms=AMS.find(m=>m.id===msId);if(!ms)return;
+  const kiasi=ms.kiasi_kilichoombwa||0;
+  if(!kiasi){alert('Kiasi hakijawekwa na Mwekahazina.');return;}
+  await DB.patch('maombi_msaada',`id=eq.${msId}`,{status:'approved',admin_jina:currentUser.jina_kamili,tarehe_idhinisha:new Date().toISOString()});
+  await DB.post('matumizi',{aina:ms.aina,jina_mwanachama:AW.find(w=>w.id===ms.mwanachama_id)?.jina_kamili||'',mwanachama_id:ms.mwanachama_id,tegemezi_jina:ms.tegemezi_jina,uhusiano:ms.uhusiano,kiasi,maelezo:ms.maelezo||'',tarehe:leo(),admin_jina:currentUser.jina_kamili,status:'approved',imeridhiwa:true});
+  const mem=AW.find(w=>w.id===ms.mwanachama_id);
+  if(mem){const newJ=Math.max(0,(mem.hisa_jamii||0)-kiasi);await DB.patch('wanachama',`id=eq.${ms.mwanachama_id}`,{hisa_jamii:newJ});}
+  const pending=getPending();
+  const pa=pending.find(p=>p.type==='msaada'&&p.data.ms_id===msId);
+  if(pa)removePending(pa.id);
+  await loadAll();flash(`Msaada wa ${fmt(kiasi)} umeidhinishwa na kutolewa!`);
+}
+
+async function kataaMsaada(id){
+  if(!isMwekahazina()&&!isMwenyekiti()){notify('hisaNotify','Hakuna ruhusa.','error');return;}
+  if(!confirm('Kataa ombi hili?'))return;
+  await DB.patch('maombi_msaada',`id=eq.${id}`,{status:'rejected'});
+  const pending=getPending();
+  const pa=pending.find(p=>p.type==='msaada'&&p.data.ms_id===id);
+  if(pa)removePending(pa.id);
+  await loadAll();
+}
+async function rekodiMarejesho(){
+  const lid=$('marejLoanSel').value,kiasi=parseInt($('marejKiasi').value),tarehe=$('marejTarehe').value;
+  if(!lid||!kiasi||kiasi<1){notify('marejNotify','Chagua mkopo na weka kiasi sahihi!','error');return;}
+  const l=AM.find(m=>m.id===lid);if(!l)return;
+  const repaid=AR.filter(r=>r.mkopo_id===lid).reduce((s,r)=>s+r.kiasi,0);
+  const bakaa=l.kiasi-repaid;
+  if(kiasi>bakaa){notify('marejNotify',`Kiasi kikubwa kuliko bakaa ya ${fmt(bakaa)}!`,'error');return;}
+  await DB.post('marejesho',{mkopo_id:lid,mwanachama_id:l.mwanachama_id,kiasi,tarehe,admin_jina:currentUser.jina_kamili});
+  if(kiasi>=bakaa)await DB.patch('mikopo',`id=eq.${lid}`,{status:'paid',kiasi_kilicholipwa:l.kiasi});
+  else await DB.patch('mikopo',`id=eq.${lid}`,{kiasi_kilicholipwa:repaid+kiasi});
+  notify('marejNotify',`✅ Malipo ya ${fmt(kiasi)} yamerekodi!`,'success');
+  $('marejKiasi').value='';await loadAll();
+}
+
+// ════════════════════════════════════
+// MEMBER DETAIL OVERLAY
+// ════════════════════════════════════
+function openMemberDetail(id){
+  const m=AW.find(w=>w.id===id);if(!m)return;
+  const myTeg=AT.filter(t=>t.mwanachama_id===id);
+  const myL=AM.filter(l=>l.mwanachama_id===id);
+  const activeLoan=myL.filter(l=>l.status==='approved').reduce((s,l)=>s+l.kiasi,0);
+  $('detailName').textContent=m.jina_kamili;
+  $('detailMeta').textContent=`${m.cheo} · @${m.username} · ${m.namba_simu}`;
+  $('detailGrid').innerHTML=`
+    <div class="dstat"><div class="dstat-lbl">Hisa Maendeleo</div><div class="dstat-val">${fmt(m.hisa_maendeleo)}</div></div>
+    <div class="dstat"><div class="dstat-lbl">Hisa Jamii</div><div class="dstat-val">${fmt(m.hisa_jamii)}</div></div>
+    <div class="dstat"><div class="dstat-lbl">Mkopo Max</div><div class="dstat-val">${fmt(m.hisa_maendeleo*2)}</div></div>
+    <div class="dstat"><div class="dstat-lbl">Mikopo Hai</div><div class="dstat-val">${fmt(activeLoan)}</div></div>`;
+  $('detailTegemezi').innerHTML=myTeg.length===0?'':
+    `<p style="font-size:12px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;margin-top:4px">Tegemezi</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+    ${myTeg.map(t=>`<div style="background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px"><strong>${t.uhusiano}:</strong> ${t.jina_kamili}</div>`).join('')}
+    </div>`;
+  $('detailLoans').innerHTML=myL.length===0?'':
+    `<p style="font-size:12px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Mikopo</p>
+    <div class="tw" style="margin-bottom:14px">
+    <table><thead><tr><th>Kiasi</th><th>Aina</th><th>Mwisho</th><th>Hali</th></tr></thead><tbody>
+    ${myL.map(l=>`<tr><td>${fmt(l.kiasi)}</td><td>${l.aina}</td><td>${l.tarehe_mwisho}</td><td><span class="pill ${l.status==='approved'?'pill-green':l.status==='pending'?'pill-amber':'pill-red'}">${l.status}</span></td></tr>`).join('')}
+    </tbody></table></div>`;
+  $('detailQuickUpdate').innerHTML=`
+    <div style="background:#f8fafc;border:1px solid var(--line);border-radius:var(--rs);padding:14px">
+    <p style="font-size:13px;font-weight:700;margin-bottom:10px">⚡ Sasisha Hisa Haraka</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <select id="qHisaType" style="padding:9px 12px;font-size:13px;border:1.5px solid var(--line);border-radius:8px;background:white"><option value="maendeleo">Hisa Maendeleo</option><option value="jamii">Hisa Jamii</option></select>
+      <input type="number" id="qAmount" placeholder="Kiasi TZS" style="padding:9px 12px;font-size:13px;border:1.5px solid var(--line);border-radius:8px"/>
+    </div>
+    <button class="btn btn-gold" style="width:100%;justify-content:center" onclick="quickHisa('${id}','${m.jina_kamili}')">Sasisha Hisa</button>
+    </div>`;
+  $('memberOverlay').classList.add('open');
+}
+function closeOverlay(){$('memberOverlay').classList.remove('open');}
+async function quickHisa(id,jina){
+  const aina=$('qHisaType').value,kiasi=parseInt($('qAmount').value);
+  if(!kiasi||kiasi<1){alert('Weka kiasi sahihi!');return;}
+  const mem=AW.find(w=>w.id===id);if(!mem)return;
+  const field=aina==='maendeleo'?'hisa_maendeleo':'hisa_jamii';
+  await DB.patch('wanachama',`id=eq.${id}`,{[field]:(mem[field]||0)+kiasi});
+  await DB.post('hisa_history',{mwanachama_id:id,aina,kiasi,maelezo:'',tarehe:leo(),admin_jina:currentUser.jina_kamili});
+  closeOverlay();await loadAll();flash(`Hisa za ${jina} zimesasishwa!`);
+}
+
+// ════════════════════════════════════
+// MATUMIZI
+// ════════════════════════════════════
+function toggleMatumFields(){
+  const aina=$('matumAina').value;
+  const show=['Kifo cha Tegemezi','Hospitali ya Tegemezi'].includes(aina);
+  $('matumMemberWrap').style.display=show?'block':'none';
+}
+function renderMatumizi(){
+  if(!isAdmin())return;
+  const mSel=$('matumMemSel');const prev=mSel.value;
+  mSel.innerHTML='<option value="">— Chagua Mwanachama —</option>';
+  AW.filter(w=>w.status==='approved').forEach(w=>{const o=document.createElement('option');o.value=w.id;o.textContent=w.jina_kamili;mSel.appendChild(o);});
+  if(prev)mSel.value=prev;
+  $('matumTbody').innerHTML=AX.length===0?`<tr><td colspan="7" class="empty-td">Hakuna matumizi yaliyorekodiwa.</td></tr>`:
+    AX.map(x=>`<tr>
+      <td>${x.tarehe}</td>
+      <td><span class="pill pill-red">${x.aina}</span></td>
+      <td>${x.jina_mwanachama||'—'}</td>
+      <td>${x.tegemezi_jina?x.tegemezi_jina+' ('+x.uhusiano+')':'—'}</td>
+      <td><strong style="color:var(--red)">${fmt(x.kiasi)}</strong></td>
+      <td>${x.maelezo||'—'}</td>
+      <td>${x.admin_jina||'—'}</td>
+    </tr>`).join('');
+  toggleMatumFields();
+}
+async function rekodiMatumizi(){
+  const aina=$('matumAina').value,kiasi=parseInt($('matumKiasi').value),tarehe=$('matumTarehe').value,maelezo=$('matumMaelezo').value.trim();
+  if(!kiasi||kiasi<1||!tarehe){notify('matumNotify','Jaza kiasi na tarehe!','error');return;}
+  const isPersonal=['Kifo cha Tegemezi','Hospitali ya Tegemezi'].includes(aina);
+  const mid=isPersonal?$('matumMemSel').value:null;
+  const tegJina=isPersonal?$('matumTegJina').value.trim():'';
+  const uhusiano=isPersonal?$('matumUhusiano').value:'';
+  if(isPersonal&&(!mid||!tegJina)){notify('matumNotify','Chagua mwanachama na weka jina la tegemezi!','error');return;}
+  const mem=mid?AW.find(w=>w.id===mid):null;
+  await DB.post('matumizi',{aina,jina_mwanachama:mem?.jina_kamili||'',mwanachama_id:mid||null,tegemezi_jina:tegJina,uhusiano,kiasi,maelezo,tarehe,admin_jina:currentUser.jina_kamili,status:'approved',imeridhiwa:true});
+  if(mid&&mem){const newJ=Math.max(0,(mem.hisa_jamii||0)-kiasi);await DB.patch('wanachama',`id=eq.${mid}`,{hisa_jamii:newJ});}
+  notify('matumNotify',`✅ Matumizi ya ${fmt(kiasi)} yamehifadhiwa na yametolewa kwenye Hisa Jamii!`,'success');
+  $('matumKiasi').value='';$('matumMaelezo').value='';$('matumTegJina').value='';
+  await loadAll();flash(`Matumizi ya ${fmt(kiasi)} yamerekodiwa!`);
+}
+
+// ════════════════════════════════════
+// CHART
+// ════════════════════════════════════
+function buildChartYears(){
+  const sel=$('chartYear');const cy=new Date().getFullYear();
+  const years=new Set([cy]);
+  AH.forEach(h=>{if(h.tarehe){const y=new Date(h.tarehe).getFullYear();if(!isNaN(y))years.add(y);}});
+  sel.innerHTML='';[...years].sort((a,b)=>b-a).forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;sel.appendChild(o);});
+}
+function renderChart(){
+  if(!isAdmin())return;
+  const year=parseInt($('chartYear').value)||new Date().getFullYear();
+  const type=$('chartType').value;
+  const md=Array(12).fill(0),jd=Array(12).fill(0);
+  AH.forEach(h=>{
+    const d=new Date(h.tarehe);
+    if(isNaN(d.getTime())||d.getFullYear()!==year)return;
+    const m=d.getMonth();
+    if(h.aina==='maendeleo')md[m]+=h.kiasi;
+    else jd[m]+=h.kiasi;
+  });
+  const datasets=[];
+  if(type==='both'||type==='maendeleo')datasets.push({label:'Hisa Maendeleo',data:md,backgroundColor:'rgba(29,78,216,0.82)',borderColor:'#1d4ed8',borderWidth:1.5,borderRadius:5});
+  if(type==='both'||type==='jamii')datasets.push({label:'Hisa Jamii',data:jd,backgroundColor:'rgba(180,83,9,0.78)',borderColor:'#b45309',borderWidth:1.5,borderRadius:5});
+  const ctx=$('hisaChart').getContext('2d');
+  if(hisaChartInst)hisaChartInst.destroy();
+  hisaChartInst=new Chart(ctx,{type:'bar',data:{labels:MONTHS_SW,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>fmt(v)},title:{display:true,text:'TZS'}},x:{grid:{display:false}}}}});
+}
+
+// ════════════════════════════════════
+// RIPOTI
+// ════════════════════════════════════
+function setRepTab(t){
+  currentRepTab=t;
+  document.querySelectorAll('.rep-tab').forEach((el,i)=>{
+    const tabs=['hisa-m','hisa-j','mikopo','matumizi','kamili'];
+    el.classList.toggle('active',tabs[i]===t);
+  });
+  generateReport();
+}
+function clearRepFilter(){$('repFrom').value='';$('repTo').value='';generateReport();}
+
+function generateReport(){
+  if(!isAdmin())return;
+  // Show/hide export buttons based on role
+  const exportBtns=document.querySelectorAll('.rep-export-btn');
+  exportBtns.forEach(b=>b.style.display=isMwekahazina()?'':'none');
+  const from=$('repFrom').value,to=$('repTo').value;
+  const cf=d=>(!from||d>=from)&&(!to||d<=to);
+  const lbl=from||to?`Kipindi: ${from||'Mwanzo'} — ${to||'Leo'}`:'Wakati Wote';
+  $('repRangeLabel').textContent=lbl;
+  const t=currentRepTab;
+  let cards='',tableHTML='';
+
+  if(t==='hisa-m'||t==='kamili'){
+    const approved=AW.filter(w=>w.status==='approved');
+    const tM=approved.reduce((s,w)=>s+w.hisa_maendeleo,0);
+    const filtH=AH.filter(h=>h.aina==='maendeleo'&&cf(h.tarehe));
+    const added=filtH.reduce((s,h)=>s+h.kiasi,0);
+    if(t==='hisa-m'){
+      cards=`<div class="rep-card"><div class="rep-card-lbl">Jumla Hisa Maendeleo</div><div class="rep-card-val">${fmt(tM)}</div></div>
+             <div class="rep-card"><div class="rep-card-lbl">Wanachama</div><div class="rep-card-val">${approved.length}</div></div>
+             <div class="rep-card"><div class="rep-card-lbl">Mchango (Kipindi)</div><div class="rep-card-val">${fmt(added)}</div></div>
+             <div class="rep-card"><div class="rep-card-lbl">Wastani / Mwanachama</div><div class="rep-card-val">${fmt(approved.length?Math.round(tM/approved.length):0)}</div></div>`;
+      tableHTML=`<div class="admin-sub" style="margin-bottom:12px">Hisa Maendeleo za Wanachama Wote</div>
+        <div class="tw"><table><thead><tr><th>#</th><th>Mwanachama</th><th>Hisa Maendeleo</th><th>% ya Jumla</th></tr></thead><tbody>
+        ${approved.map((w,i)=>`<tr><td>${i+1}</td><td><strong>${w.jina_kamili}</strong></td><td>${fmt(w.hisa_maendeleo)}</td><td>${tM?((w.hisa_maendeleo/tM)*100).toFixed(1):0}%</td></tr>`).join('')}
+        </tbody><tfoot><tr style="font-weight:700;background:#f8fafc"><td colspan="2">JUMLA</td><td>${fmt(tM)}</td><td>100%</td></tr></tfoot></table></div>`;
+    }
+  }
+
+  if(t==='hisa-j'||t==='kamili'){
+    const approved=AW.filter(w=>w.status==='approved');
+    const tJ=approved.reduce((s,w)=>s+w.hisa_jamii,0);
+    const totalX=AX.reduce((s,x)=>s+x.kiasi,0);
+    const netJ=Math.max(0,tJ);
+    const filtX=AX.filter(x=>cf(x.tarehe));
+    if(t==='hisa-j'){
+      cards=`<div class="rep-card"><div class="rep-card-lbl">Jumla Hisa Jamii</div><div class="rep-card-val">${fmt(tJ)}</div></div>
+             <div class="rep-card"><div class="rep-card-lbl">Jumla Matumizi</div><div class="rep-card-val" style="color:var(--red)">${fmt(totalX)}</div></div>
+             <div class="rep-card"><div class="rep-card-lbl">Bakaa ya Hisa Jamii</div><div class="rep-card-val" style="color:var(--green)">${fmt(netJ)}</div></div>
+             <div class="rep-card"><div class="rep-card-lbl">Matumizi (Kipindi)</div><div class="rep-card-val">${fmt(filtX.reduce((s,x)=>s+x.kiasi,0))}</div></div>`;
+      tableHTML=`<div class="admin-sub" style="margin-bottom:12px">Matumizi ya Hisa Jamii (Kipindi Kilichochaguliwa)</div>
+        <div class="tw"><table><thead><tr><th>#</th><th>Tarehe</th><th>Aina</th><th>Mwanachama</th><th>Tegemezi</th><th>Kiasi</th></tr></thead><tbody>
+        ${filtX.length===0?`<tr><td colspan="6" class="empty-td">Hakuna matumizi kwa kipindi hiki.</td></tr>`:filtX.map((x,i)=>`<tr><td>${i+1}</td><td>${x.tarehe}</td><td>${x.aina}</td><td>${x.jina_mwanachama||'—'}</td><td>${x.tegemezi_jina||'—'}</td><td style="color:var(--red)"><strong>${fmt(x.kiasi)}</strong></td></tr>`).join('')}
+        </tbody><tfoot><tr style="font-weight:700;background:#f8fafc"><td colspan="5">JUMLA</td><td style="color:var(--red)">${fmt(filtX.reduce((s,x)=>s+x.kiasi,0))}</td></tr></tfoot></table></div>`;
+    }
+  }
+
+  if(t==='mikopo'||t==='kamili'){
+    const filtM=AM.filter(m=>cf(m.tarehe));
+    const approved=filtM.filter(m=>m.status==='approved');
+    const tM=approved.reduce((s,m)=>s+m.kiasi,0);
+    const faida=tM*INT_RATE;
+    if(t==='mikopo'){
+      cards=`<div class="rep-card"><div class="rep-card-lbl">Jumla Mikopo</div><div class="rep-card-val">${fmt(filtM.reduce((s,m)=>s+m.kiasi,0))}</div></div>
+             <div class="rep-card"><div class="rep-card-lbl">Iliyoidhinishwa</div><div class="rep-card-val">${fmt(tM)}</div></div>
+             <div class="rep-card"><div class="rep-card-lbl">Faida (10%)</div><div class="rep-card-val" style="color:var(--green)">${fmt(faida)}</div></div>
+             <div class="rep-card"><div class="rep-card-lbl">Idadi ya Mikopo</div><div class="rep-card-val">${filtM.length}</div></div>`;
+      tableHTML=`<div class="admin-sub" style="margin-bottom:12px">Mikopo yote (Kipindi Kilichochaguliwa)</div>
+        <div class="tw"><table><thead><tr><th>#</th><th>Mwanachama</th><th>Kiasi</th><th>Aina</th><th>Tarehe</th><th>Mwisho</th><th>Kilicholipwa</th><th>Hali</th></tr></thead><tbody>
+        ${filtM.length===0?`<tr><td colspan="8" class="empty-td">Hakuna mikopo kwa kipindi hiki.</td></tr>`:filtM.map((l,i)=>{
+          const mem=AW.find(w=>w.id===l.mwanachama_id)||{};
+          const repaid=AR.filter(r=>r.mkopo_id===l.id).reduce((s,r)=>s+r.kiasi,0);
+          return`<tr><td>${i+1}</td><td><strong>${mem.jina_kamili||'—'}</strong></td><td>${fmt(l.kiasi)}</td><td><span class="pill pill-blue">${l.aina}</span></td><td>${l.tarehe}</td><td style="color:var(--red)">${l.tarehe_mwisho}</td><td>${fmt(repaid)}</td><td><span class="pill ${l.status==='approved'?'pill-green':l.status==='pending'?'pill-amber':'pill-red'}">${l.status}</span></td></tr>`;
+        }).join('')}
+        </tbody></table></div>`;
+    }
+  }
+
+  if(t==='matumizi'){
+    const filtX=AX.filter(x=>cf(x.tarehe));
+    const byAina={};filtX.forEach(x=>{byAina[x.aina]=(byAina[x.aina]||0)+x.kiasi;});
+    cards=Object.entries(byAina).map(([a,v])=>`<div class="rep-card"><div class="rep-card-lbl">${a}</div><div class="rep-card-val" style="color:var(--red)">${fmt(v)}</div></div>`).join('');
+    if(!cards)cards=`<div class="rep-card"><div class="rep-card-lbl">Jumla Matumizi</div><div class="rep-card-val">TZS 0</div></div>`;
+    tableHTML=`<div class="admin-sub" style="margin-bottom:12px">Matumizi Yote ya Hisa Jamii</div>
+      <div class="tw"><table><thead><tr><th>#</th><th>Tarehe</th><th>Aina</th><th>Mwanachama</th><th>Tegemezi</th><th>Kiasi</th><th>Maelezo</th><th>Admin</th></tr></thead><tbody>
+      ${filtX.length===0?`<tr><td colspan="8" class="empty-td">Hakuna matumizi.</td></tr>`:filtX.map((x,i)=>`<tr><td>${i+1}</td><td>${x.tarehe}</td><td>${x.aina}</td><td>${x.jina_mwanachama||'—'}</td><td>${x.tegemezi_jina||'—'}</td><td style="color:var(--red)"><strong>${fmt(x.kiasi)}</strong></td><td>${x.maelezo||'—'}</td><td>${x.admin_jina||'—'}</td></tr>`).join('')}
+      </tbody><tfoot><tr style="font-weight:700;background:#f8fafc"><td colspan="5">JUMLA</td><td style="color:var(--red)">${fmt(filtX.reduce((s,x)=>s+x.kiasi,0))}</td><td colspan="2"></td></tr></tfoot></table></div>`;
+  }
+
+  if(t==='kamili'){
+    const approved=AW.filter(w=>w.status==='approved');
+    const tM=approved.reduce((s,w)=>s+w.hisa_maendeleo,0);
+    const tJ=approved.reduce((s,w)=>s+w.hisa_jamii,0);
+    const totalX=AX.reduce((s,x)=>s+x.kiasi,0);
+    const activeMikopo=AM.filter(m=>m.status==='approved').reduce((s,m)=>s+m.kiasi,0);
+    const faida=activeMikopo*INT_RATE;
+    cards=`<div class="rep-card"><div class="rep-card-lbl">Jumla Hisa Maendeleo</div><div class="rep-card-val">${fmt(tM)}</div></div>
+           <div class="rep-card"><div class="rep-card-lbl">Jumla Hisa Jamii</div><div class="rep-card-val">${fmt(tJ)}</div></div>
+           <div class="rep-card"><div class="rep-card-lbl">Mikopo Hai</div><div class="rep-card-val">${fmt(activeMikopo)}</div></div>
+           <div class="rep-card"><div class="rep-card-lbl">Faida Inayotarajiwa</div><div class="rep-card-val" style="color:var(--green)">${fmt(faida)}</div></div>
+           <div class="rep-card"><div class="rep-card-lbl">Jumla Matumizi</div><div class="rep-card-val" style="color:var(--red)">${fmt(totalX)}</div></div>
+           <div class="rep-card"><div class="rep-card-lbl">Wanachama</div><div class="rep-card-val">${approved.length}</div></div>`;
+    tableHTML=`<div class="admin-sub" style="margin-bottom:12px">Muhtasari wa Wanachama Wote</div>
+      <div class="tw"><table><thead><tr><th>#</th><th>Mwanachama</th><th>Hisa Maendeleo</th><th>Hisa Jamii</th><th>Jumla</th><th>Mikopo Hai</th></tr></thead><tbody>
+      ${approved.map((w,i)=>{const mL=AM.filter(m=>m.mwanachama_id===w.id&&m.status==='approved').reduce((s,m)=>s+m.kiasi,0);return`<tr><td>${i+1}</td><td><strong>${w.jina_kamili}</strong></td><td>${fmt(w.hisa_maendeleo)}</td><td>${fmt(w.hisa_jamii)}</td><td><strong>${fmt(w.hisa_maendeleo+w.hisa_jamii)}</strong></td><td>${mL>0?fmt(mL):'—'}</td></tr>`;}).join('')}
+      </tbody></table></div>`;
+  }
+
+  $('repCards').innerHTML=cards;
+  $('repTableWrap').innerHTML=tableHTML;
+}
+
+// ════════════════════════════════════
+// EXPORT
+// ════════════════════════════════════
+function exportExcel(){
+  if(!isMwekahazina()){alert('Ripoti ya Excel inaweza kupakuliwa na Mwekahazina pekee!');return;}
+  if(typeof XLSX==='undefined'){alert('Subiri maktaba ipakiwe.');return;}
+  const wb=XLSX.utils.book_new();
+  const approved=AW.filter(w=>w.status==='approved');
+  // Sheet 1: Hisa
+  const tM=approved.reduce((s,w)=>s+w.hisa_maendeleo,0);
+  const tJ=approved.reduce((s,w)=>s+w.hisa_jamii,0);
+  const s1=[['#','Mwanachama','Hisa Maendeleo','Hisa Jamii','Jumla']];
+  approved.forEach((w,i)=>s1.push([i+1,w.jina_kamili,w.hisa_maendeleo,w.hisa_jamii,w.hisa_maendeleo+w.hisa_jamii]));
+  s1.push(['','JUMLA',tM,tJ,tM+tJ]);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(s1),'Hisa za Wanachama');
+  // Sheet 2: Mikopo
+  const s2=[['#','Mwanachama','Kiasi','Aina','Tarehe','Mwisho','Kilicholipwa','Hali']];
+  AM.forEach((l,i)=>{const m=AW.find(w=>w.id===l.mwanachama_id)||{};const rep=AR.filter(r=>r.mkopo_id===l.id).reduce((s,r)=>s+r.kiasi,0);s2.push([i+1,m.jina_kamili||'—',l.kiasi,l.aina,l.tarehe,l.tarehe_mwisho,rep,l.status]);});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(s2),'Mikopo');
+  // Sheet 3: Matumizi
+  const s3=[['#','Tarehe','Aina','Mwanachama','Tegemezi','Kiasi','Maelezo','Admin']];
+  AX.forEach((x,i)=>s3.push([i+1,x.tarehe,x.aina,x.jina_mwanachama||'—',x.tegemezi_jina||'—',x.kiasi,x.maelezo||'—',x.admin_jina||'—']));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(s3),'Matumizi ya Jamii');
+  XLSX.writeFile(wb,'THE_HEROES_SACCO_Ripoti_'+leo()+'.xlsx');
+}
+function exportPDF(){generateReport();setTimeout(()=>window.print(),350);}
+
+// ════════════════════════════════════
+// MEMBER DELETE (role-based)
+// ════════════════════════════════════
+async function pendingFutaMwanachama(id,jina){
+  if(!isKatibu()){notify('hisaNotify','Kufuta mwanachama ni kazi ya Katibu (kupeleka kwa Mwenyekiti).','error');return;}
+  if(!confirm(`Tuma ombi la kufuta "${jina}" kwa Mwenyekiti kwa idhini?`))return;
+  addPending({
+    type:'futa_mwanachama',
+    title:`Futa Mwanachama: ${jina}`,
+    desc:`Katibu anaomba kufuta mwanachama huyu kutoka kwenye mfumo.`,
+    data:{mem_id:id,mem_jina:jina},
+    by:currentUser.jina_kamili,role:'Katibu'
+  });
+  flash('Ombi la kufuta limepelekwa kwa Mwenyekiti!');
+  // Notify Mwenyekiti
+  waMwenyekiti(`*THE HEROES — IDHINI YA KUFUTA MWANACHAMA* ⚠️\n\nHabari Mwenyekiti,\n\nKatibu anaomba ruhusa ya kufuta mwanachama.\n\n👤 *Mwanachama:* ${jina}\n🔑 *Katibu:* ${currentUser.jina_kamili}\n\nTafadhali ingia mfumo utoe idhini.\n\n— Mfumo wa THE HEROES`);
+}
+
+async function futaMwanachamaDirect(id,jina){
+  if(!isMwenyekiti()){notify('hisaNotify','Idhini ya kufuta ni kazi ya Mwenyekiti.','error');return;}
+  if(!confirm(`Futa "${jina}" kabisa?`))return;
+  await DB.del('tegemezi',`mwanachama_id=eq.${id}`);
+  await DB.del('maombi_msaada',`mwanachama_id=eq.${id}`);
+  await DB.del('marejesho',`mwanachama_id=eq.${id}`);
+  await DB.del('mikopo',`mwanachama_id=eq.${id}`);
+  await DB.del('hisa_history',`mwanachama_id=eq.${id}`);
+  await DB.del('wanachama',`id=eq.${id}`);
+  const pending=getPending();
+  const pa=pending.find(p=>p.type==='futa_mwanachama'&&p.data.mem_id===id);
+  if(pa)removePending(pa.id);
+  await loadAll();flash(`${jina} amefutwa kutoka kwenye mfumo!`);
+}
+
+// ════════════════════════════════════
+// PENDING BADGE + MWENYEKITI IDHINI SECTION
+// ════════════════════════════════════
+function renderPendingBadge(){
+  if(!isMwenyekiti())return;
+  const count=countPending();
+  const adminBtn=document.querySelectorAll('.nav-tab')[3];
+  if(adminBtn&&count>0){
+    adminBtn.textContent=`🛡 Uongozi (${count})`;
+  }else if(adminBtn){
+    adminBtn.textContent='🛡 Uongozi';
+  }
+}
+
+function renderMwenyekitiIdhini(){
+  if(!isMwenyekiti())return;
+  const pending=getPending();
+  const container=$('mwenyekitiIdhiniSection');
+  if(!container)return;
+
+  if(!pending.length){
+    container.innerHTML=`<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--rs);padding:14px 16px;font-size:13px;color:var(--green)">✅ Hakuna vitendo vinavyosubiri idhini yako.</div>`;
+    return;
+  }
+
+  container.innerHTML=pending.map(a=>`
+    <div style="background:#fefce8;border:1px solid #fde68a;border-radius:var(--rs);padding:14px 16px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:700;font-size:14px">${a.title}</div>
+          <div style="font-size:12px;color:var(--mt);margin-top:3px">${a.desc}</div>
+          <div style="font-size:11px;color:var(--mt);margin-top:4px">Na: ${a.by} (${a.role}) · ${new Date(a.created).toLocaleString('sw-TZ')}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          ${getIdhiniButton(a)}
+          <button class="btn btn-red btn-sm" onclick="kataaPending('${a.id}','${a.type}',${JSON.stringify(a.data).replace(/"/g,'&quot;')})">✕ Kataa</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function getIdhiniButton(a){
+  if(a.type==='hisa')
+    return `<button class="btn btn-green btn-sm" onclick="idhinishaHisa('${a.id}')">✓ Idhinisha Hisa</button>`;
+  if(a.type==='futa_mwanachama')
+    return `<button class="btn btn-red btn-sm" onclick="futaMwanachamaDirect('${a.data.mem_id}','${a.data.mem_jina}')">✓ Idhinisha Kufuta</button>`;
+  if(a.type==='mkopo')
+    return `<button class="btn btn-green btn-sm" onclick="idhinishaMkopoPending('${a.id}','${a.data.mkopo_id}')">✓ Idhinisha Mkopo</button>`;
+  if(a.type==='msaada')
+    return `<button class="btn btn-green btn-sm" onclick="idhinishaMsaadaPending('${a.id}','${a.data.ms_id}')">✓ Idhinisha Msaada</button>`;
+  return '';
+}
+
+async function idhinishaHisa(pendingId){
+  const pa=getPending().find(p=>p.id===pendingId);if(!pa)return;
+  const d=pa.data;
+  const mem=AW.find(w=>w.id===d.mid);if(!mem)return;
+  const field=d.aina==='maendeleo'?'hisa_maendeleo':'hisa_jamii';
+  const newVal=(mem[field]||0)+d.kiasi;
+  await DB.patch('wanachama',`id=eq.${d.mid}`,{[field]:newVal});
+  await DB.post('hisa_history',{mwanachama_id:d.mid,aina:d.aina,kiasi:d.kiasi,maelezo:d.maelezo||'',tarehe:leo(),admin_jina:currentUser.jina_kamili});
+  removePending(pendingId);
+  await loadAll();flash(`Hisa za ${d.mem_jina} zimesasishwa!`);
+}
+
+async function idhinishaMkopoPending(pendingId,mkopo_id){
+  const l=AM.find(m=>m.id===mkopo_id);if(!l)return;
+  await DB.patch('mikopo',`id=eq.${mkopo_id}`,{status:'approved',admin_jina:currentUser.jina_kamili});
+  removePending(pendingId);
+  await loadAll();flash(`Mkopo wa ${fmt(l.kiasi)} umeidhinishwa!`);
+}
+
+async function idhinishaMsaadaPending(pendingId,msId){
+  const ms=AMS.find(m=>m.id===msId);if(!ms)return;
+  const kiasi=ms.kiasi_kilichoombwa||0;
+  if(!kiasi){alert('Kiasi hakijawekwa na Mwekahazina.');return;}
+  await DB.patch('maombi_msaada',`id=eq.${msId}`,{status:'approved',admin_jina:currentUser.jina_kamili,tarehe_idhinisha:new Date().toISOString()});
+  await DB.post('matumizi',{aina:ms.aina,jina_mwanachama:AW.find(w=>w.id===ms.mwanachama_id)?.jina_kamili||'',mwanachama_id:ms.mwanachama_id,tegemezi_jina:ms.tegemezi_jina,uhusiano:ms.uhusiano,kiasi,maelezo:ms.maelezo||'',tarehe:leo(),admin_jina:currentUser.jina_kamili,status:'approved',imeridhiwa:true});
+  const mem=AW.find(w=>w.id===ms.mwanachama_id);
+  if(mem){const newJ=Math.max(0,(mem.hisa_jamii||0)-kiasi);await DB.patch('wanachama',`id=eq.${ms.mwanachama_id}`,{hisa_jamii:newJ});}
+  removePending(pendingId);
+  await loadAll();flash(`Msaada wa ${fmt(kiasi)} umeidhinishwa!`);
+}
+
+async function kataaPending(pendingId,type,data){
+  if(!confirm('Kataa kitendo hiki?'))return;
+  // If it's a loan or msaada in 'reviewed' state, revert to pending
+  if(type==='mkopo'&&data.mkopo_id){
+    await DB.patch('mikopo',`id=eq.${data.mkopo_id}`,{status:'pending'});
+  }
+  if(type==='msaada'&&data.ms_id){
+    await DB.patch('maombi_msaada',`id=eq.${data.ms_id}`,{status:'pending'});
+  }
+  removePending(pendingId);
+  await loadAll();flash('Kitendo kimekataliwa.');
+}
+
+// ════════════════════════════════════
+// INIT
+// ════════════════════════════════════
+window.onload=()=>{
+  $('loanDate').value=leo();
+  toggleMatumFields();
+};
+</script>
+</body>
+</html>
