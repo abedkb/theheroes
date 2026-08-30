@@ -308,7 +308,7 @@ tr:hover td{background:#f8fafc}
     <button class="nav-tab nav-mwenyekiti" id="idhiniTab" data-page="pg-idhini" onclick="showPage('pg-idhini')">🛡 Idhini</button>
     <button class="nav-tab nav-mwenyekiti" data-page="pg-wanachama" onclick="showPage('pg-wanachama')">👥 Wanachama</button>
     <!-- ALWAYS VISIBLE, any role/view -->
-    <button class="nav-tab nav-always" data-page="pg-wasifu" onclick="showPage('pg-wasifu')">👤 Wasifu Wangu</button>
+    <button class="nav-tab nav-always" data-page="pg-wasifu" onclick="showPage('pg-wasifu')">👤 Profile</button>
   </div>
 
   <!-- ═══ PAGE: DASHIBODI ═══ -->
@@ -657,7 +657,7 @@ tr:hover td{background:#f8fafc}
     </div>
   </div>
 
-  <!-- ═══ PAGE: WASIFU WANGU (any logged-in user — leaders included) ═══ -->
+  <!-- ═══ PAGE: PROFILE (any logged-in user — leaders included) ═══ -->
   <div class="page" id="pg-wasifu">
     <div class="sec">
       <div class="sec-head"><h3>👤 Taarifa Zangu</h3></div>
@@ -1357,14 +1357,17 @@ function updateWanachamaSelCount(){
   el.textContent = n===0 ? 'Hakuna aliyechaguliwa' : `Wamechaguliwa: ${n}`;
 }
 
-async function smsToMember(phone,jina){
-  const msg=prompt(`Andika ujumbe kwa ${jina}:`);
-  if(!msg||!msg.trim())return;
-  let n=phone.trim();
-  if(n.startsWith('0'))n='255'+n.slice(1);
-  const ok=await sendSMS(n,`THE HEROES: ${msg.trim()}`);
-  if(ok)flash(`Ujumbe umetumwa kwa ${jina}!`);
-  else alert('SMS haijatumwa. Angalia muunganisho wa Beem.');
+function smsToMember(phone,jina){
+  // Pre-select just this member in the SMS panel below and hand off to the same
+  // type-and-send workflow used for bulk SMS — no popup prompt.
+  document.querySelectorAll('.wanachama-check').forEach(c=>{c.checked=(c.dataset.phone===phone);});
+  const checkAll=$('wanachamaCheckAll');if(checkAll)checkAll.checked=false;
+  updateWanachamaSelCount();
+  const box=$('wanachamaSmsMsg');
+  box.value='';
+  box.scrollIntoView({behavior:'smooth',block:'center'});
+  box.focus();
+  notify('wanachamaSmsNotify',`✍️ Andika ujumbe kwa ${jina} kisha bonyeza "Tuma kwa Waliochaguliwa".`,'info');
 }
 
 async function tumaSmsWaliochaguliwa(){
@@ -1497,7 +1500,7 @@ async function sasishaHisa(){
   notify('hisaNotify',`✅ Ombi la kusasisha hisa za ${mem.jina_kamili} limepelekwa kwa Mwenyekiti kwa idhini!`,'success');
   $('hisaKiasi').value='';$('hisaMaelezo').value='';
   // Notify Mwenyekiti via SMS (needs final approval)
-  smsMwenyekiti(`THE HEROES: Idhini ya hisa inahitajika. Mwanachama: ${mem.jina_kamili}. Aina: ${aina==='maendeleo'?'Hisa Maendeleo':'Hisa Jamii'}. Kiasi: ${fmt(kiasi)}. Ingia mfumoni kuidhinisha.`);
+  smsMwenyekiti(`Habari Mwenyekiti, Mwanachama ${mem.jina_kamili} amenunua hisa za ${aina==='maendeleo'?'maendeleo':'jamii'} kiasi cha Tsh.${fmt(kiasi).replace('TZS ','')} ,Tafadhali ingia kwenye mfumo ili kumthibitishia hisa zake.`);
   await loadAll();
 }
 
