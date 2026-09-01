@@ -1273,9 +1273,9 @@ async function ombaLoan(){
   const wazi=m=>m.mwanachama_id===currentUser.id&&m.status!=='rejected'&&m.status!=='paid';
   if(aina==='Maendeleo'){
     if(kiasi>me.hisa_maendeleo*2){notify('loanNotify',`Kiwango cha mkopo unachoomba ni kikubwa kuliko idadi ya hisa ulizonazo, idadi ya hisa ulizonazo zinakuruhusu kuchukua hadi Tsh,${fmt(me.hisa_maendeleo*2)}`,'error');return;}
-    // Maendeleo is blocked by ANY existing/unpaid loan — Maendeleo or Dharura.
-    const active=AM.find(wazi);
-    if(active){notify('loanNotify',`Huwezi kuomba mkopo wa Maendeleo — tayari una mkopo wa ${active.aina} ambao haujalipwa/unasubiri idhini.`,'error');return;}
+    // Maendeleo is only blocked by an existing/unpaid Maendeleo loan — an unpaid Dharura loan does not block it.
+    const active=AM.find(m=>wazi(m)&&m.aina==='Maendeleo');
+    if(active){notify('loanNotify','Tayari una mkopo wa Maendeleo ambao haujalipwa/unasubiri idhini.','error');return;}
   }
   if(aina==='Dharura'){
     if(kiasi>100000){notify('loanNotify','Mkopo wa Dharura hauzidi TZS 100,000.','error');return;}
@@ -1287,7 +1287,7 @@ async function ombaLoan(){
   const miezi=mkopoMiezi(kiasi);
   const r=await DB.post('mikopo',{mwanachama_id:currentUser.id,kiasi,aina,tarehe,tarehe_mwisho:mkopoDeadline(tarehe,miezi),miezi,status:'pending',kiasi_kilicholipwa:0});
   if(Array.isArray(r)&&r[0]){
-    notify('loanNotify','✅ Ombi limetumwa! Mwekahazina atakipitia kwanza.','success');
+    notify('loanNotify','Ombi lako la mkopo limetumwa kikamilifu kwa mweka hazina kwa hatua zaidi.Ahsante!','success');
     $('loanAmount').value='';
     // Notify Mwekahazina via SMS
     const ainaSMS=aina==='Maendeleo'?'maendeleo':'dharura';
@@ -1354,11 +1354,16 @@ async function thibitishaMsaada(){
   result.style.display='block';result.className='notify notify-info show';result.textContent='✅ Taarifa zimethibitishwa! Inatuma...';
   const r=await DB.post('maombi_msaada',{mwanachama_id:currentUser.id,aina,tegemezi_jina:jinaSajiliwa,uhusiano,maelezo,tarehe,status:'pending',imehakikishwa:true});
   if(Array.isArray(r)&&r[0]){
+    // Wording differs by request type: illness ("kuuguliwa") vs. bereavement ("kufiwa").
+    const lang = aina==='Kifo cha Tegemezi'
+      ? {pole:'kufiwa na',mweka:'amefiwa na',wote:'anafiwa na',changamoto:'kufiwa na'}
+      : {pole:'kuuguliwa na',mweka:'ameuguliwa na',wote:'anauguliwa na',changamoto:'kuuguliwa na'};
     result.className='notify notify-success show';
-    result.textContent='✅ Ombi limetumwa! Mwekahazina atakipitia.';
+    result.textContent=`Pole sana kwa ${lang.pole} ${uhusiano}. Ombi lako limetumwa kwa mwekahazina utapokea ujumbe wa uthibitisho baada ya ombi kuchakatwa.`;
     // Notify Mwekahazina via SMS
-    const smsMsg=`THE HEROES: Ombi jipya la msaada. Mwanachama: ${currentUser.jina_kamili}. Aina: ${aina}. Tegemezi: ${jinaSajiliwa} (${uhusiano}). Ingia mfumoni kuhakiki.`;
-    smsMwekahazina(smsMsg);
+    smsMwekahazina(`Habari mweka hazina, Ndugu ${currentUser.jina_kamili} ${lang.mweka} ${uhusiano} yake. Tafadhali shughulikia ombi hili na kumpatia haki yake kama ilivyo utaratibu wa kikundi.`);
+    // Notify all other members
+    smsAllMembers(jinaMpokeaji=>`Habari ${jinaMpokeaji}, ndugu yetu ${currentUser.jina_kamili} ${lang.wote} ${uhusiano} yake, taarifa zimetumwa kwa viongozi ili ziweze kuchakatwa zaidi na apatiwe pole kama ilivyo kawaida ya kikundi chetu. Tuungane kwa pamoja kumpa pole ndugu yetu ${currentUser.jina_kamili} kwa changamoto hii ya ${lang.changamoto} ${uhusiano}.`,currentUser.id);
     $('msaadaJina').value='';$('msaadaMaelezo').value='';$('msaadaTegemezi').value='';
     await loadAll();
   }
