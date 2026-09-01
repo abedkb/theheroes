@@ -437,7 +437,7 @@ tr:hover td{background:#f8fafc}
         <div class="field"><label>Aina ya Msaada</label>
           <select id="msaadaAina">
             <option value="Kifo cha Tegemezi">Kifo cha Tegemezi</option>
-            <option value="Hospitali ya Tegemezi">Kulazwa Hospitali kwa Tegemezi</option>
+            <option value="Kuuguza">Kuuguza</option>
           </select>
         </div>
         <div class="field"><label>Tegemezi Aliyehusika</label>
@@ -625,7 +625,7 @@ tr:hover td{background:#f8fafc}
         <div class="field"><label>Aina ya Matumizi</label>
           <select id="matumAina" onchange="toggleMatumFields()">
             <option value="Kifo cha Tegemezi">Kifo cha Tegemezi (Msiba)</option>
-            <option value="Hospitali ya Tegemezi">Kulazwa Hospitali (Tegemezi)</option>
+            <option value="Kuuguza">Kuuguza</option>
             <option value="Tukio la Kikundi">Tukio la Kikundi</option>
             <option value="Matumizi Mengine">Matumizi Mengine</option>
           </select>
@@ -1836,7 +1836,7 @@ async function idhinishaMsaada(msId){
   const pa=pending.find(p=>p.type==='msaada'&&p.data.ms_id===msId);
   if(pa)removePending(pa.id);
   await loadAll();flash(`Msaada wa ${fmt(kiasi)} umeidhinishwa na kutolewa!`);
-  if(mem)smsMember(mem,`THE HEROES: Hongera ${mem.jina_kamili||''}! Ombi lako la msaada (${ms.aina}) la Tsh ${fmt(kiasi)} limeidhinishwa.`);
+  if(mem)smsMember(mem,`Umepokea pole ya kiasi cha Tsh.${Number(kiasi).toLocaleString()} kutoka katika kikundi chako cha THE HEROES.`);
 }
 
 async function kataaMsaada(id){
@@ -1929,7 +1929,7 @@ async function quickHisa(id,jina){
 // ════════════════════════════════════
 function toggleMatumFields(){
   const aina=$('matumAina').value;
-  const show=['Kifo cha Tegemezi','Hospitali ya Tegemezi'].includes(aina);
+  const show=['Kifo cha Tegemezi','Kuuguza'].includes(aina);
   $('matumMemberWrap').style.display=show?'block':'none';
 }
 function renderMatumizi(){
@@ -1953,7 +1953,7 @@ function renderMatumizi(){
 async function rekodiMatumizi(){
   const aina=$('matumAina').value,kiasi=parseInt($('matumKiasi').value),tarehe=$('matumTarehe').value,maelezo=$('matumMaelezo').value.trim();
   if(!kiasi||kiasi<1||!tarehe){notify('matumNotify','Jaza kiasi na tarehe!','error');return;}
-  const isPersonal=['Kifo cha Tegemezi','Hospitali ya Tegemezi'].includes(aina);
+  const isPersonal=['Kifo cha Tegemezi','Kuuguza'].includes(aina);
   const mid=isPersonal?$('matumMemSel').value:null;
   const tegJina=isPersonal?$('matumTegJina').value.trim():'';
   const uhusiano=isPersonal?$('matumUhusiano').value:'';
@@ -2263,7 +2263,7 @@ async function idhinishaMsaadaPending(pendingId,msId){
   if(mem){const newJ=Math.max(0,(mem.hisa_jamii||0)-kiasi);await DB.patch('wanachama',`id=eq.${ms.mwanachama_id}`,{hisa_jamii:newJ});}
   removePending(pendingId);
   await loadAll();flash(`Msaada wa ${fmt(kiasi)} umeidhinishwa!`);
-  if(mem)smsMember(mem,`THE HEROES: Hongera ${mem.jina_kamili||''}! Ombi lako la msaada (${ms.aina}) la Tsh ${fmt(kiasi)} limeidhinishwa.`);
+  if(mem)smsMember(mem,`Umepokea pole ya kiasi cha Tsh.${Number(kiasi).toLocaleString()} kutoka katika kikundi chako cha THE HEROES.`);
 }
 
 async function kataaPending(pendingId,type,data){
