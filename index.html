@@ -142,7 +142,11 @@ tr:hover td{background:#f8fafc}
 /* SYNC BANNER */
 .sync-banner{background:var(--grl);border:1px solid #bbf7d0;border-radius:var(--rs);padding:10px 16px;font-size:13px;color:var(--green);font-weight:600;margin-bottom:16px;display:none;align-items:center;gap:8px}
 .sync-banner.show{display:flex}
+.sync-banner.warn{background:var(--gl);border-color:#fde68a;color:var(--gold)}
+.sync-banner.error{background:var(--rdl);border-color:#fecaca;color:var(--red)}
 .sync-dot{width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse 1.5s infinite;flex-shrink:0}
+.sync-banner.warn .sync-dot{background:var(--gold)}
+.sync-banner.error .sync-dot{background:var(--red)}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
 
 /* REPORT */
@@ -327,6 +331,16 @@ tr:hover td{background:#f8fafc}
       <div class="sec-head"><h3>ℹ️ Taarifa za Kikundi</h3></div>
       <div class="sec-body">
         <p style="font-size:14px;color:var(--mt);line-height:1.8">Kadi zilizo hapo juu zinaonyesha <strong>hali ya fedha ya kikundi kwa ujumla</strong>. Hisa zako binafsi zinasimamiwa na viongozi. Unaweza kuomba mkopo au msaada hapa chini.</p>
+      </div>
+    </div>
+
+    <!-- Group financial summary report (non-admin) — totals only, no per-member breakdown -->
+    <div class="sec" id="memberReportCard" style="display:none">
+      <div class="sec-head"><h3>📋 Ripoti ya Jumla ya Kikundi</h3><span style="font-size:11px;color:var(--mt)" id="memberReportDate">—</span></div>
+      <div class="sec-body">
+        <div class="tw"><table>
+          <tbody id="memberReportTbody"></tbody>
+        </table></div>
       </div>
     </div>
 
@@ -811,6 +825,16 @@ function smsMwenyekiti(msg) { return sendSMS(SMS_MWENYEKITI, msg); }
 function toIntlPhone(n){ n=(n||'').trim(); return n.startsWith('0') ? '255'+n.slice(1) : n; }
 function smsMember(mem,msg){ if(!mem||!mem.namba_simu)return; return sendSMS(toIntlPhone(mem.namba_simu),msg); }
 
+// ─── Broadcast a personalized SMS to every approved member (each gets their own name in
+// the greeting). Fetches fresh from the DB rather than the in-memory AW cache, since this
+// also needs to work from the registration screen, before anyone is logged in / AW is loaded.
+async function smsAllMembers(msgFor,excludeId){
+  const members=await DB.get('wanachama','status=eq.approved');
+  if(!Array.isArray(members))return;
+  const targets=members.filter(w=>w.namba_simu&&w.id!==excludeId);
+  return Promise.all(targets.map(w=>smsMember(w,msgFor((w.jina_kamili||'').split(' ')[0]))));
+}
+
 // ─── Tangazo (Announcements) — Katibu broadcasts SMS to all approved members ───
 async function tumaTangazo(){
   if(!isKatibu()){notify('tangazoNotify','Kutuma tangazo ni kazi ya Katibu.','error');return;}
@@ -886,9 +910,15 @@ function notify(id,msg,type){
   el.textContent=msg;el.className='notify notify-'+type+' show';
   setTimeout(()=>el&&el.classList.remove('show'),6000);
 }
-function flash(msg){
+function flash(msg,type){
+  // type: undefined/'success' (green), 'warn' (amber), 'error' (red) — always the
+  // banner pinned at the top of the dashboard, never a browser popup.
   const b=$('syncBanner');$('syncMsg').textContent=msg;
-  b.classList.add('show');setTimeout(()=>b.classList.remove('show'),5000);
+  b.classList.remove('warn','error');
+  if(type==='warn'||type==='error')b.classList.add(type);
+  b.classList.add('show');
+  clearTimeout(flash._t);
+  flash._t=setTimeout(()=>b.classList.remove('show','warn','error'),type?7000:5000);
 }
 function switchAuthTab(t){
   ['loginSection','regSection'].forEach(s=>$(s).classList.add('hidden'));
@@ -984,8 +1014,10 @@ async function doRegister(){
   for(const t of tegMap){const v=$(t.f).value.trim();if(v)await DB.post('tegemezi',{mwanachama_id:mid,uhusiano:t.u,jina_kamili:v});}
   notify('regNotify','✅ Ombi limetumwa! Katibu atataarifiwa kukukubali. Subiri idhini.','success');
   // Notify Katibu via SMS
-  const smsMsg = `THE HEROES: Ombi jipya la usajili. Jina: ${jina}. Simu: ${simu}. Ingia mfumoni kuidhinisha au kukataa.`;
+  const smsMsg = `Habari Katibu, Mwanachama ${jina} ameomba kujiunga na kikundi cha THE HEROES, Tafadhali naomba uingie kwenye mfumo ili kuthibitisha / kukataa ombi hili endapo hajakidhi vigezo.`;
   smsKatibu(smsMsg);
+  // Notify all existing members that someone has requested to join
+  smsAllMembers(jinaMpokeaji=>`Habari ${jinaMpokeaji}, Ndugu ${jina} ametuma ombi la kujiunga kwenye kikundi cha THE HEROES, utapokea ujumbe wa uthibitisho wa ombi hili mara tu katibu atakapothibitisha ombi hili.`);
   ['regJina','regSimu','regPass','regPass2','teg-baba','teg-mama','teg-mwenzi','teg-babamkwe','teg-mamamkwe','teg-mtoto1','teg-mtoto2','teg-mtoto3','teg-mtoto4'].forEach(id=>{const el=$(id);if(el)el.value='';});
 }
 
@@ -1049,9 +1081,11 @@ function renderHeader(){
   // Show/hide admin-only elements (chart, etc.)
   document.querySelectorAll('.admin-only').forEach(el=>el.style.display='none');
   $('memberInfoCard').style.display='block';
+  $('memberReportCard').style.display='block';
 
   if(isAdmin()){
     $('memberInfoCard').style.display='none';
+    $('memberReportCard').style.display='none';
     document.querySelectorAll('.admin-only').forEach(el=>el.style.display='');
   }
 
@@ -1083,11 +1117,34 @@ function renderDashibodi(){
   $('gGawioM').textContent=fmt(gawioM);
   $('gGawioK').textContent=fmt(gawioK);
   updateLoanCap();
+
+  // Member-facing "Ripoti ya Jumla ya Kikundi" — group totals only, no per-member breakdown.
+  $('memberReportDate').textContent='Tarehe: '+leo();
+  $('memberReportTbody').innerHTML=[
+    ['Jumla Hisa Maendeleo (Wanachama Wote)',fmt(tM)],
+    ['Jumla Hisa Jamii (Baada ya Matumizi)',fmt(netJ)],
+    ['Mikopo Hai (Iliyoidhinishwa)',fmt(tMikopo)],
+    ['Faida Inayotarajiwa (10% ya Mikopo Hai)',fmt(faida)],
+    ['Gawio kwa Kila Mwanachama',fmt(gawioM)],
+    ['Gawio kwa Kila Kiongozi',fmt(gawioK)],
+    ['Idadi ya Wanachama Waliosajiliwa',approved.length]
+  ].map(([lbl,val])=>`<tr><td><strong>${lbl}</strong></td><td style="text-align:right">${val}</td></tr>`).join('');
 }
 
 // ════════════════════════════════════
 // MIKOPO
 // ════════════════════════════════════
+// Loan period, in months, by amount: up to 499,000 -> 3, 500,000-999,000 -> 6, 1,000,000+ -> 9.
+function mkopoMiezi(kiasi){
+  if(kiasi>=1000000)return 9;
+  if(kiasi>=500000)return 6;
+  return 3;
+}
+// Deadline date = fromDate (YYYY-MM-DD) + miezi months, as YYYY-MM-DD.
+function mkopoDeadline(fromDate,miezi){
+  const d=new Date(fromDate);d.setMonth(d.getMonth()+miezi);
+  return d.toISOString().slice(0,10);
+}
 function updateLoanCap(){
   const me=AW.find(w=>w.id===currentUser?.id)||{hisa_maendeleo:0};
   $('loanCapM').textContent=fmt(me.hisa_maendeleo*2);
@@ -1097,19 +1154,32 @@ async function ombaLoan(){
   const tarehe=$('loanDate').value,aina=$('loanType').value,kiasi=parseInt($('loanAmount').value);
   if(!tarehe||!kiasi||kiasi<1){notify('loanNotify','Jaza tarehe na kiasi sahihi!','error');return;}
   const me=AW.find(w=>w.id===currentUser.id)||{hisa_maendeleo:0};
-  if(aina==='Maendeleo'&&kiasi>me.hisa_maendeleo*2){notify('loanNotify',`Kiwango cha juu ni ${fmt(me.hisa_maendeleo*2)} (Mara mbili ya Hisa zako).`,'error');return;}
-  if(aina==='Dharura'&&kiasi>100000){notify('loanNotify','Mkopo wa Dharura hauzidi TZS 100,000.','error');return;}
-  const active=AM.find(m=>m.mwanachama_id===currentUser.id&&m.aina===aina&&m.status!=='rejected');
-  if(active){notify('loanNotify',`Tayari una mkopo wa ${aina} unaosubiri.`,'error');return;}
-  const miezi=kiasi<500000?3:6;
-  const d=new Date(tarehe);d.setMonth(d.getMonth()+miezi);
-  const r=await DB.post('mikopo',{mwanachama_id:currentUser.id,kiasi,aina,tarehe,tarehe_mwisho:d.toISOString().slice(0,10),miezi,status:'pending',kiasi_kilicholipwa:0});
+  // "Unpaid/pending" = not rejected and not fully paid (pending/reviewed/approved all count).
+  const wazi=m=>m.mwanachama_id===currentUser.id&&m.status!=='rejected'&&m.status!=='paid';
+  if(aina==='Maendeleo'){
+    if(kiasi>me.hisa_maendeleo*2){notify('loanNotify',`Kiwango cha juu ni ${fmt(me.hisa_maendeleo*2)} (Mara mbili ya Hisa zako).`,'error');return;}
+    // Maendeleo is blocked by ANY existing/unpaid loan — Maendeleo or Dharura.
+    const active=AM.find(wazi);
+    if(active){notify('loanNotify',`Huwezi kuomba mkopo wa Maendeleo — tayari una mkopo wa ${active.aina} ambao haujalipwa/unasubiri idhini.`,'error');return;}
+  }
+  if(aina==='Dharura'){
+    if(kiasi>100000){notify('loanNotify','Mkopo wa Dharura hauzidi TZS 100,000.','error');return;}
+    // Dharura is only blocked by an existing/unpaid Dharura loan — an unpaid Maendeleo loan does not block it.
+    const active=AM.find(m=>wazi(m)&&m.aina==='Dharura');
+    if(active){notify('loanNotify','Tayari una mkopo wa Dharura ambao haujalipwa/unasubiri idhini.','error');return;}
+  }
+  // Provisional period at request time — recalculated from the actual approval date once approved.
+  const miezi=mkopoMiezi(kiasi);
+  const r=await DB.post('mikopo',{mwanachama_id:currentUser.id,kiasi,aina,tarehe,tarehe_mwisho:mkopoDeadline(tarehe,miezi),miezi,status:'pending',kiasi_kilicholipwa:0});
   if(Array.isArray(r)&&r[0]){
     notify('loanNotify','✅ Ombi limetumwa! Mwekahazina atakipitia kwanza.','success');
     $('loanAmount').value='';
     // Notify Mwekahazina via SMS
-    const smsMsg=`THE HEROES: Ombi jipya la mkopo. Mwanachama: ${currentUser.jina_kamili}. Kiasi: ${fmt(kiasi)}. Aina: ${aina}. Ingia mfumoni kuhakiki.`;
+    const ainaSMS=aina==='Maendeleo'?'maendeleo':'dharura';
+    const smsMsg=`Habari Mweka Hazina, mwanachama ${currentUser.jina_kamili} ametuma ombi la mkopo wa ${ainaSMS} kiasi cha Tsh.${Number(kiasi).toLocaleString()}, Tafadhali naomba uingie kwenye mfumo ili kumthibitishia ombi hili.`;
     smsMwekahazina(smsMsg);
+    // Notify all other members that a loan has been requested
+    smsAllMembers(jinaMpokeaji=>`Habari ${jinaMpokeaji}, mwanachama ${currentUser.jina_kamili} ametuma ombi la mkopo wa ${ainaSMS} kiasi cha Tsh.${Number(kiasi).toLocaleString()}, utapokea ujumbe wa uthibitisho wa mkopo huu mara baada ya viongozi kuthibitisha ombi hili.`,currentUser.id);
     await loadAll();
   }
   else{notify('loanNotify','Hitilafu. Jaribu tena.','error');}
@@ -1513,6 +1583,8 @@ async function idhinishaMwanachama(id){
   smsMwenyekiti(`THE HEROES: Mwanachama mpya ameidhinishwa na Katibu. Jina: ${mem.jina_kamili||'—'}. Simu: ${mem.namba_simu||'—'}.`);
   // Notify the member so they know they can now log in
   smsMember(mem,`THE HEROES: Hongera ${mem.jina_kamili||''}! Usajili wako umeidhinishwa na Katibu. Sasa unaweza kuingia mfumoni ukitumia namba yako ya simu na nywila uliyoweka.`);
+  // Notify all other members that a new member has joined
+  smsAllMembers(jinaMpokeaji=>`Habari ${jinaMpokeaji}, Ndugu ${mem.jina_kamili||''}, amethibitishwa na kuwa mwanachama mpya wa kikundi cha THE HEROES.`,id);
 }
 async function kataaMwanachama(id){
   if(!isKatibu()&&!isMwenyekiti()){notify('hisaNotify','Kukataa ombi ni kazi ya Katibu.','error');return;}
@@ -1580,13 +1652,20 @@ async function idhinishaMkopo(id){
   if(!isMwenyekiti()){notify('hisaNotify','Idhini ya mwisho ya mkopo ni kazi ya Mwenyekiti.','error');return;}
   const l=AM.find(m=>m.id===id);if(!l)return;
   const mem=AW.find(w=>w.id===l.mwanachama_id);
-  await DB.patch('mikopo',`id=eq.${id}`,{status:'approved',admin_jina:currentUser.jina_kamili});
+  // Loan period counts from the approval date, not the request date.
+  const tareheIdhinishwa=leo();
+  const miezi=mkopoMiezi(l.kiasi);
+  const mwisho=mkopoDeadline(tareheIdhinishwa,miezi);
+  await DB.patch('mikopo',`id=eq.${id}`,{status:'approved',admin_jina:currentUser.jina_kamili,miezi,tarehe_mwisho:mwisho,tarehe_idhinishwa:tareheIdhinishwa});
   // Remove from pending if exists
   const pending=getPending();
   const pa=pending.find(p=>p.type==='mkopo'&&p.data.mkopo_id===id);
   if(pa)removePending(pa.id);
   await loadAll();flash(`Mkopo wa ${fmt(l.kiasi)} umeidhinishwa!`);
-  if(mem)smsMember(mem,`THE HEROES: Hongera ${mem.jina_kamili||''}! Mkopo wako wa Tsh ${fmt(l.kiasi)} umeidhinishwa na Mwenyekiti.`);
+  const muda=`Muda wa mkopo ni miezi ${miezi} kuanzia tarehe ${tareheIdhinishwa}, mwisho wa malipo ni tarehe ${mwisho}.`;
+  if(mem)smsMember(mem,`THE HEROES: Hongera ${mem.jina_kamili||''}! Mkopo wako wa Tsh ${fmt(l.kiasi)} umeidhinishwa na Mwenyekiti. ${muda}`);
+  // Notify all other members that this loan has been approved and paid out
+  smsAllMembers(jinaMpokeaji=>`Habari ${jinaMpokeaji}, kiasi cha mkopo wa Tsh. ${fmt(l.kiasi).replace('TZS ','')} kilichoombwa na ${mem?.jina_kamili||''} kimeidhinishwa leo tarehe ${tareheIdhinishwa}. ${muda}`,l.mwanachama_id);
 }
 
 async function kataaMkopo(id){
@@ -1605,7 +1684,7 @@ async function hakikiMsaada(msId){
   // Mwekahazina reviews → sends to Mwenyekiti
   if(!isMwekahazina()){notify('hisaNotify','Uhakiki wa msaada ni kazi ya Mwekahazina.','error');return;}
   const kiasi=parseInt($('msKiasi_'+msId)?.value)||0;
-  if(!kiasi||kiasi<1){alert('Weka kiasi cha msaada kwanza!');return;}
+  if(!kiasi||kiasi<1){flash('Weka kiasi cha msaada kwanza!','error');return;}
   const ms=AMS.find(m=>m.id===msId);if(!ms)return;
   const mem=AW.find(w=>w.id===ms.mwanachama_id)||{};
   // Mark as reviewed
@@ -1628,7 +1707,7 @@ async function idhinishaMsaada(msId){
   if(!isMwenyekiti()){notify('hisaNotify','Idhini ya mwisho ya msaada ni kazi ya Mwenyekiti.','error');return;}
   const ms=AMS.find(m=>m.id===msId);if(!ms)return;
   const kiasi=ms.kiasi_kilichoombwa||0;
-  if(!kiasi){alert('Kiasi hakijawekwa na Mwekahazina.');return;}
+  if(!kiasi){flash('Kiasi hakijawekwa na Mwekahazina.','warn');return;}
   await DB.patch('maombi_msaada',`id=eq.${msId}`,{status:'approved',admin_jina:currentUser.jina_kamili,tarehe_idhinisha:new Date().toISOString()});
   await DB.post('matumizi',{aina:ms.aina,jina_mwanachama:AW.find(w=>w.id===ms.mwanachama_id)?.jina_kamili||'',mwanachama_id:ms.mwanachama_id,tegemezi_jina:ms.tegemezi_jina,uhusiano:ms.uhusiano,kiasi,maelezo:ms.maelezo||'',tarehe:leo(),admin_jina:currentUser.jina_kamili,status:'approved',imeridhiwa:true});
   const mem=AW.find(w=>w.id===ms.mwanachama_id);
@@ -1663,6 +1742,9 @@ async function rekodiMarejesho(){
   if(kiasi>=bakaa)await DB.patch('mikopo',`id=eq.${lid}`,{status:'paid',kiasi_kilicholipwa:l.kiasi});
   else await DB.patch('mikopo',`id=eq.${lid}`,{kiasi_kilicholipwa:repaid+kiasi});
   notify('marejNotify',`✅ Malipo ya ${fmt(kiasi)} yamerekodi!`,'success');
+  const mem=AW.find(w=>w.id===l.mwanachama_id);
+  const bakaaMpya=Math.max(0,bakaa-kiasi);
+  if(mem)smsMember(mem,`Habari ${mem.jina_kamili||''}, kiasi cha Tsh.${Number(kiasi).toLocaleString()} kimepunguzwa kutoka kwenye mkopo wako wa Tsh.${Number(l.kiasi).toLocaleString()}, kiasi cha mkopo uliobaki ni Tsh.${Number(bakaaMpya).toLocaleString()}.`);
   $('marejKiasi').value='';await loadAll();
 }
 
@@ -1705,13 +1787,21 @@ function openMemberDetail(id){
 }
 function closeOverlay(){$('memberOverlay').classList.remove('open');}
 async function quickHisa(id,jina){
+  if(!isMwekahazina()){flash('Kusasisha hisa ni kazi ya Mwekahazina pekee.','warn');return;}
   const aina=$('qHisaType').value,kiasi=parseInt($('qAmount').value);
-  if(!kiasi||kiasi<1){alert('Weka kiasi sahihi!');return;}
+  if(!kiasi||kiasi<1){flash('Weka kiasi sahihi!','error');return;}
   const mem=AW.find(w=>w.id===id);if(!mem)return;
-  const field=aina==='maendeleo'?'hisa_maendeleo':'hisa_jamii';
-  await DB.patch('wanachama',`id=eq.${id}`,{[field]:(mem[field]||0)+kiasi});
-  await DB.post('hisa_history',{mwanachama_id:id,aina,kiasi,maelezo:'',tarehe:leo(),admin_jina:currentUser.jina_kamili});
-  closeOverlay();await loadAll();flash(`Hisa za ${jina} zimesasishwa!`);
+  // Same as sasishaHisa: goes to Mwenyekiti for approval — hisa only reflects on the
+  // member's account and dashboard chart once idhinishaHisa() actually writes it.
+  addPending({
+    type:'hisa',
+    title:`Sasisha Hisa za ${mem.jina_kamili}`,
+    desc:`Aina: ${aina==='maendeleo'?'Hisa Maendeleo':'Hisa Jamii'} · Kiasi: ${fmt(kiasi)}`,
+    data:{mid:id,aina,kiasi,maelezo:'',mem_jina:mem.jina_kamili},
+    by:currentUser.jina_kamili,role:'Mwekahazina'
+  });
+  smsMwenyekiti(`Habari Mwenyekiti, Mwanachama ${mem.jina_kamili} amenunua hisa za ${aina==='maendeleo'?'maendeleo':'jamii'} kiasi cha Tsh.${fmt(kiasi).replace('TZS ','')} ,Tafadhali ingia kwenye mfumo ili kumthibitishia hisa zake.`);
+  closeOverlay();await loadAll();flash(`Ombi la kusasisha hisa za ${jina} limepelekwa kwa Mwenyekiti kwa idhini!`);
 }
 
 // ════════════════════════════════════
@@ -1904,8 +1994,8 @@ function generateReport(){
 // EXPORT
 // ════════════════════════════════════
 function exportExcel(){
-  if(!isMwekahazina()){alert('Ripoti ya Excel inaweza kupakuliwa na Mwekahazina pekee!');return;}
-  if(typeof XLSX==='undefined'){alert('Subiri maktaba ipakiwe.');return;}
+  if(!isMwekahazina()){flash('Ripoti ya Excel inaweza kupakuliwa na Mwekahazina pekee!','warn');return;}
+  if(typeof XLSX==='undefined'){flash('Subiri maktaba ipakiwe.','warn');return;}
   const wb=XLSX.utils.book_new();
   const approved=AW.filter(w=>w.status==='approved');
   // Sheet 1: Hisa
@@ -2030,16 +2120,23 @@ async function idhinishaHisa(pendingId){
 async function idhinishaMkopoPending(pendingId,mkopo_id){
   const l=AM.find(m=>m.id===mkopo_id);if(!l)return;
   const mem=AW.find(w=>w.id===l.mwanachama_id);
-  await DB.patch('mikopo',`id=eq.${mkopo_id}`,{status:'approved',admin_jina:currentUser.jina_kamili});
+  // Loan period counts from the approval date, not the request date.
+  const tareheIdhinishwa=leo();
+  const miezi=mkopoMiezi(l.kiasi);
+  const mwisho=mkopoDeadline(tareheIdhinishwa,miezi);
+  await DB.patch('mikopo',`id=eq.${mkopo_id}`,{status:'approved',admin_jina:currentUser.jina_kamili,miezi,tarehe_mwisho:mwisho});
   removePending(pendingId);
   await loadAll();flash(`Mkopo wa ${fmt(l.kiasi)} umeidhinishwa!`);
-  if(mem)smsMember(mem,`THE HEROES: Hongera ${mem.jina_kamili||''}! Mkopo wako wa Tsh ${fmt(l.kiasi)} umeidhinishwa na Mwenyekiti.`);
+  const muda=`Muda wa mkopo ni miezi ${miezi} kuanzia tarehe ${tareheIdhinishwa}, mwisho wa malipo ni tarehe ${mwisho}.`;
+  if(mem)smsMember(mem,`THE HEROES: Hongera ${mem.jina_kamili||''}! Mkopo wako wa Tsh ${fmt(l.kiasi)} umeidhinishwa na Mwenyekiti. ${muda}`);
+  // Notify all other members that this loan has been approved and paid out
+  smsAllMembers(jinaMpokeaji=>`Habari ${jinaMpokeaji}, kiasi cha mkopo wa Tsh. ${fmt(l.kiasi).replace('TZS ','')} kilichoombwa na ${mem?.jina_kamili||''} kimeidhinishwa leo tarehe ${tareheIdhinishwa}. ${muda}`,l.mwanachama_id);
 }
 
 async function idhinishaMsaadaPending(pendingId,msId){
   const ms=AMS.find(m=>m.id===msId);if(!ms)return;
   const kiasi=ms.kiasi_kilichoombwa||0;
-  if(!kiasi){alert('Kiasi hakijawekwa na Mwekahazina.');return;}
+  if(!kiasi){flash('Kiasi hakijawekwa na Mwekahazina.','warn');return;}
   await DB.patch('maombi_msaada',`id=eq.${msId}`,{status:'approved',admin_jina:currentUser.jina_kamili,tarehe_idhinisha:new Date().toISOString()});
   await DB.post('matumizi',{aina:ms.aina,jina_mwanachama:AW.find(w=>w.id===ms.mwanachama_id)?.jina_kamili||'',mwanachama_id:ms.mwanachama_id,tegemezi_jina:ms.tegemezi_jina,uhusiano:ms.uhusiano,kiasi,maelezo:ms.maelezo||'',tarehe:leo(),admin_jina:currentUser.jina_kamili,status:'approved',imeridhiwa:true});
   const mem=AW.find(w=>w.id===ms.mwanachama_id);
