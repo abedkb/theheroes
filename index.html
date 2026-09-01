@@ -1272,7 +1272,7 @@ async function ombaLoan(){
   // "Unpaid/pending" = not rejected and not fully paid (pending/reviewed/approved all count).
   const wazi=m=>m.mwanachama_id===currentUser.id&&m.status!=='rejected'&&m.status!=='paid';
   if(aina==='Maendeleo'){
-    if(kiasi>me.hisa_maendeleo*2){notify('loanNotify',`Kiwango cha juu ni ${fmt(me.hisa_maendeleo*2)} (Mara mbili ya Hisa zako).`,'error');return;}
+    if(kiasi>me.hisa_maendeleo*2){notify('loanNotify',`Kiwango cha mkopo unachoomba ni kikubwa kuliko idadi ya hisa ulizonazo, idadi ya hisa ulizonazo zinakuruhusu kuchukua hadi Tsh,${fmt(me.hisa_maendeleo*2)}`,'error');return;}
     // Maendeleo is blocked by ANY existing/unpaid loan — Maendeleo or Dharura.
     const active=AM.find(wazi);
     if(active){notify('loanNotify',`Huwezi kuomba mkopo wa Maendeleo — tayari una mkopo wa ${active.aina} ambao haujalipwa/unasubiri idhini.`,'error');return;}
