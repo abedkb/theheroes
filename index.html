@@ -762,7 +762,6 @@ const BEEM_SENDER_ID = 'THE HEROES';
 const SMS_MWENYEKITI  = '255748863304';
 const SMS_KATIBU      = '255695541568';
 const SMS_MWEKAHAZINA = '255755863325';
-const PENDING_KEY    = 'heroes_pending_actions';
 const INT_RATE=0.10;
 const MONTHS_SW=['Jan','Feb','Mac','Apr','Mei','Jun','Jul','Ago','Sep','Okt','Nov','Des'];
 const SHARE_VAL=5000;
@@ -802,7 +801,7 @@ function dbNotConfigured(notifyId){
 }
 
 // State
-let AW=[],AT=[],AH=[],AM=[],AR=[],AX=[],AMS=[],AMZ=[];
+let AW=[],AT=[],AH=[],AM=[],AR=[],AX=[],AMS=[],AMZ=[],AP=[];
 let currentUser=null, currentRole=null, currentRepTab='hisa-m';
 let viewMode='mwanachama'; // 'kiongozi' or 'mwanachama' — only leaders can switch
 let michangoYear={maendeleo:null,jamii:null}; // selected year per hisa type on the member's own michango card
@@ -821,16 +820,19 @@ function toggleViewMode(){
   renderAll();
 }
 
-// ─── Pending Actions (localStorage) ──────────────────────────────
-function getPending(){ try{ return JSON.parse(localStorage.getItem(PENDING_KEY)||'[]'); }catch(e){ return []; } }
-function savePending(arr){ localStorage.setItem(PENDING_KEY,JSON.stringify(arr)); }
-function addPending(action){
-  const arr=getPending();
-  arr.push({...action,id:Date.now().toString(),created:new Date().toISOString()});
-  savePending(arr);
+// ─── Pending Actions (Mwenyekiti's approval queue — stored server-side in
+// pending_actions, so a request Mwekahazina/Katibu submits on one device shows
+// up for Mwenyekiti on any other device. AP is the in-memory cache, refreshed
+// by loadAll(); addPending/removePending write through to the DB and the
+// caller re-runs loadAll() afterward to pick up the change. ────────────────
+async function addPending(action){
+  await DB.post('pending_actions',{aina:action.type,kichwa:action.title,maelezo:action.desc,data:action.data,admin_jina:action.by,role:action.role});
 }
-function removePending(id){ savePending(getPending().filter(a=>a.id!==id)); }
-function countPending(){ return getPending().length; }
+async function removePending(id){
+  await DB.del('pending_actions',`id=eq.${id}`);
+}
+function getPending(){ return AP; }
+function countPending(){ return AP.length; }
 
 // ─── WhatsApp helpers ─────────────────────────────────────────────
 // ─── SMS helpers (Beem Africa, via Supabase Edge Function to keep API keys server-side) ───
@@ -981,7 +983,7 @@ function switchAuthTab(t){
 // LOAD ALL DATA
 // ════════════════════════════════════
 async function loadAll(){
-  const [w,t,h,m,r,x,ms,mz]=await Promise.all([
+  const [w,t,h,m,r,x,ms,mz,pa]=await Promise.all([
     DB.get('wanachama','order=jina_kamili.asc'),
     DB.get('tegemezi','order=created_at.asc'),
     DB.get('hisa_history','order=created_at.desc'),
@@ -989,7 +991,8 @@ async function loadAll(){
     DB.get('marejesho','order=created_at.desc'),
     DB.get('matumizi','order=created_at.desc'),
     DB.get('maombi_msaada','order=created_at.desc'),
-    DB.get('maombi_masasisho','order=created_at.desc')
+    DB.get('maombi_masasisho','order=created_at.desc'),
+    DB.get('pending_actions','order=created_at.asc')
   ]);
   AW=Array.isArray(w)?w:[];
   AT=Array.isArray(t)?t:[];
@@ -999,6 +1002,10 @@ async function loadAll(){
   AX=Array.isArray(x)?x:[];
   AMS=Array.isArray(ms)?ms:[];
   AMZ=Array.isArray(mz)?mz:[];
+  // Normalize DB rows (aina/kichwa/maelezo/admin_jina) back into the shape the
+  // rest of the app already expects (type/title/desc/by), so approving/
+  // rejecting/rendering code below needed no further changes.
+  AP=Array.isArray(pa)?pa.map(p=>({id:p.id,type:p.aina,title:p.kichwa,desc:p.maelezo,data:p.data,by:p.admin_jina,role:p.role,created:p.created_at})):[];
   renderAll();
 }
 
@@ -1680,7 +1687,7 @@ async function sasishaHisa(){
   if(!kiasi||kiasi<1){notify('hisaNotify','Weka kiasi sahihi!','error');return;}
   const mem=AW.find(w=>w.id===mid);if(!mem)return;
   // Add to pending for Mwenyekiti approval
-  addPending({
+  await addPending({
     type:'hisa',
     title:`Sasisha Hisa za ${mem.jina_kamili}`,
     desc:`Aina: ${aina==='maendeleo'?'Hisa Maendeleo':'Hisa Jamii'} · Kiasi: ${fmt(kiasi)}${maelezo?' · '+maelezo:''}`,
@@ -1752,7 +1759,7 @@ async function hakikiMkopo(id){
   if(!isMwekahazina()){notify('marejNotify','Uhakiki wa mkopo ni kazi ya Mwekahazina.','error');return;}
   const l=AM.find(m=>m.id===id);if(!l)return;
   const mem=AW.find(w=>w.id===l.mwanachama_id)||{};
-  addPending({
+  await addPending({
     type:'mkopo',
     title:`Mkopo wa ${mem.jina_kamili} — ${fmt(l.kiasi)}`,
     desc:`Aina: ${l.aina} · Tarehe: ${l.tarehe} · Mwisho: ${l.tarehe_mwisho}`,
@@ -1780,7 +1787,7 @@ async function idhinishaMkopo(id){
   // Remove from pending if exists
   const pending=getPending();
   const pa=pending.find(p=>p.type==='mkopo'&&p.data.mkopo_id===id);
-  if(pa)removePending(pa.id);
+  if(pa)await removePending(pa.id);
   await loadAll();flash(`Mkopo wa ${fmt(l.kiasi)} umeidhinishwa!`);
   const muda=`Muda wa mkopo ni miezi ${miezi} kuanzia tarehe ${tareheIdhinishwa}, mwisho wa malipo ni tarehe ${mwisho}.`;
   if(mem)smsMember(mem,`THE HEROES: Hongera ${mem.jina_kamili||''}! Mkopo wako wa Tsh ${fmt(l.kiasi)} umeidhinishwa na Mwenyekiti. ${muda}`);
@@ -1796,7 +1803,7 @@ async function kataaMkopo(id){
   await DB.patch('mikopo',`id=eq.${id}`,{status:'rejected'});
   const pending=getPending();
   const pa=pending.find(p=>p.type==='mkopo'&&p.data.mkopo_id===id);
-  if(pa)removePending(pa.id);
+  if(pa)await removePending(pa.id);
   await loadAll();
   if(mem&&l)smsMember(mem,`THE HEROES: Samahani ${mem.jina_kamili||''}, ombi lako la mkopo wa Tsh ${fmt(l.kiasi)} halikuidhinishwa.`);
 }
@@ -1809,7 +1816,7 @@ async function hakikiMsaada(msId){
   const mem=AW.find(w=>w.id===ms.mwanachama_id)||{};
   // Mark as reviewed
   await DB.patch('maombi_msaada',`id=eq.${msId}`,{status:'reviewed',kiasi_kilichoombwa:kiasi,admin_jina:currentUser.jina_kamili});
-  addPending({
+  await addPending({
     type:'msaada',
     title:`Msaada: ${mem.jina_kamili} — ${ms.aina}`,
     desc:`Tegemezi: ${ms.tegemezi_jina} (${ms.uhusiano}) · Kiasi: ${fmt(kiasi)}`,
@@ -1834,7 +1841,7 @@ async function idhinishaMsaada(msId){
   if(mem){const newJ=Math.max(0,(mem.hisa_jamii||0)-kiasi);await DB.patch('wanachama',`id=eq.${ms.mwanachama_id}`,{hisa_jamii:newJ});}
   const pending=getPending();
   const pa=pending.find(p=>p.type==='msaada'&&p.data.ms_id===msId);
-  if(pa)removePending(pa.id);
+  if(pa)await removePending(pa.id);
   await loadAll();flash(`Msaada wa ${fmt(kiasi)} umeidhinishwa na kutolewa!`);
   if(mem)smsMember(mem,`Umepokea pole ya kiasi cha Tsh.${Number(kiasi).toLocaleString()} kutoka katika kikundi chako cha THE HEROES.`);
 }
@@ -1847,7 +1854,7 @@ async function kataaMsaada(id){
   await DB.patch('maombi_msaada',`id=eq.${id}`,{status:'rejected'});
   const pending=getPending();
   const pa=pending.find(p=>p.type==='msaada'&&p.data.ms_id===id);
-  if(pa)removePending(pa.id);
+  if(pa)await removePending(pa.id);
   await loadAll();
   if(mem&&ms)smsMember(mem,`THE HEROES: Samahani ${mem.jina_kamili||''}, ombi lako la msaada (${ms.aina}) halikuidhinishwa.`);
 }
@@ -1913,7 +1920,7 @@ async function quickHisa(id,jina){
   const mem=AW.find(w=>w.id===id);if(!mem)return;
   // Same as sasishaHisa: goes to Mwenyekiti for approval — hisa only reflects on the
   // member's account and dashboard chart once idhinishaHisa() actually writes it.
-  addPending({
+  await addPending({
     type:'hisa',
     title:`Sasisha Hisa za ${mem.jina_kamili}`,
     desc:`Aina: ${aina==='maendeleo'?'Hisa Maendeleo':'Hisa Jamii'} · Kiasi: ${fmt(kiasi)}`,
@@ -2143,7 +2150,7 @@ function exportPDF(){generateReport();setTimeout(()=>window.print(),350);}
 async function pendingFutaMwanachama(id,jina){
   if(!isKatibu()){notify('hisaNotify','Kufuta mwanachama ni kazi ya Katibu (kupeleka kwa Mwenyekiti).','error');return;}
   if(!await appConfirm(`Tuma ombi la kufuta "${jina}" kwa Mwenyekiti kwa idhini?`,{okText:'Tuma Ombi'}))return;
-  addPending({
+  await addPending({
     type:'futa_mwanachama',
     title:`Futa Mwanachama: ${jina}`,
     desc:`Katibu anaomba kufuta mwanachama huyu kutoka kwenye mfumo.`,
@@ -2166,7 +2173,7 @@ async function futaMwanachamaDirect(id,jina){
   await DB.del('wanachama',`id=eq.${id}`);
   const pending=getPending();
   const pa=pending.find(p=>p.type==='futa_mwanachama'&&p.data.mem_id===id);
-  if(pa)removePending(pa.id);
+  if(pa)await removePending(pa.id);
   await loadAll();flash(`${jina} amefutwa kutoka kwenye mfumo!`);
 }
 
@@ -2227,7 +2234,7 @@ async function idhinishaHisa(pendingId){
   const newVal=(mem[field]||0)+d.kiasi;
   await DB.patch('wanachama',`id=eq.${d.mid}`,{[field]:newVal});
   await DB.post('hisa_history',{mwanachama_id:d.mid,aina:d.aina,kiasi:d.kiasi,maelezo:d.maelezo||'',tarehe:leo(),admin_jina:currentUser.jina_kamili});
-  removePending(pendingId);
+  await removePending(pendingId);
   // Notify the member directly, now that the update is actually confirmed
   const idadiHisa=Math.round(d.kiasi/SHARE_VAL);
   const jumlaHisa=Math.round(newVal/SHARE_VAL);
@@ -2245,7 +2252,7 @@ async function idhinishaMkopoPending(pendingId,mkopo_id){
   const miezi=mkopoMiezi(l.kiasi);
   const mwisho=mkopoDeadline(tareheIdhinishwa,miezi);
   await DB.patch('mikopo',`id=eq.${mkopo_id}`,{status:'approved',admin_jina:currentUser.jina_kamili,miezi,tarehe_mwisho:mwisho});
-  removePending(pendingId);
+  await removePending(pendingId);
   await loadAll();flash(`Mkopo wa ${fmt(l.kiasi)} umeidhinishwa!`);
   const muda=`Muda wa mkopo ni miezi ${miezi} kuanzia tarehe ${tareheIdhinishwa}, mwisho wa malipo ni tarehe ${mwisho}.`;
   if(mem)smsMember(mem,`THE HEROES: Hongera ${mem.jina_kamili||''}! Mkopo wako wa Tsh ${fmt(l.kiasi)} umeidhinishwa na Mwenyekiti. ${muda}`);
@@ -2261,7 +2268,7 @@ async function idhinishaMsaadaPending(pendingId,msId){
   await DB.post('matumizi',{aina:ms.aina,jina_mwanachama:AW.find(w=>w.id===ms.mwanachama_id)?.jina_kamili||'',mwanachama_id:ms.mwanachama_id,tegemezi_jina:ms.tegemezi_jina,uhusiano:ms.uhusiano,kiasi,maelezo:ms.maelezo||'',tarehe:leo(),admin_jina:currentUser.jina_kamili,status:'approved',imeridhiwa:true});
   const mem=AW.find(w=>w.id===ms.mwanachama_id);
   if(mem){const newJ=Math.max(0,(mem.hisa_jamii||0)-kiasi);await DB.patch('wanachama',`id=eq.${ms.mwanachama_id}`,{hisa_jamii:newJ});}
-  removePending(pendingId);
+  await removePending(pendingId);
   await loadAll();flash(`Msaada wa ${fmt(kiasi)} umeidhinishwa!`);
   if(mem)smsMember(mem,`Umepokea pole ya kiasi cha Tsh.${Number(kiasi).toLocaleString()} kutoka katika kikundi chako cha THE HEROES.`);
 }
@@ -2275,7 +2282,7 @@ async function kataaPending(pendingId,type,data){
   if(type==='msaada'&&data.ms_id){
     await DB.patch('maombi_msaada',`id=eq.${data.ms_id}`,{status:'pending'});
   }
-  removePending(pendingId);
+  await removePending(pendingId);
   await loadAll();flash('Kitendo kimekataliwa.');
 }
 
