@@ -163,6 +163,26 @@ tr:hover td{background:#f8fafc}
 .rep-card-lbl{font-size:11px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:.07em}
 .rep-card-val{font-size:20px;font-weight:700;margin-top:6px;color:var(--ink)}
 
+/* MICHANGO CARD (member's own hisa contribution passbook — weeks × months grid, per year) */
+.michango-card{background:var(--panel);border-radius:var(--r);border:1px solid var(--line);box-shadow:var(--sh);margin-bottom:20px;overflow:hidden}
+.michango-block+.michango-block{border-top:1px solid var(--line)}
+.michango-bar{background:var(--ink);color:#fbbf24;font-family:'Playfair Display',serif;font-size:15px;font-weight:700;padding:12px 16px;letter-spacing:.03em;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.michango-year-select{background:rgba(255,255,255,0.12);color:#fff;border:1px solid rgba(255,255,255,0.28);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer}
+.michango-year-select option{color:var(--ink)}
+.michango-meta{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;justify-content:space-between;padding:12px 18px;font-size:12px;background:#f8fafc;border-bottom:1px solid var(--line)}
+.michango-meta strong{color:var(--mt);font-weight:700;margin-right:4px}
+.michango-count{color:var(--gold);font-weight:700}
+.michango-weeks-wrap{padding:16px 18px;display:flex;flex-direction:column;gap:14px;overflow-x:auto}
+.michango-week-table{width:100%;border-collapse:separate;border-spacing:0;min-width:460px;border:1.5px solid #94a3b8;border-radius:8px;overflow:hidden}
+.michango-week-table th,.michango-week-table td{padding:9px 10px;font-size:12.5px;text-align:center;white-space:nowrap;border-bottom:1px solid #94a3b8;border-right:1px solid #94a3b8}
+.michango-week-table th:last-child,.michango-week-table td:last-child{border-right:none}
+.michango-week-table tbody tr:last-child td{border-bottom:none}
+.michango-week-table thead th{background:var(--gl);color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:10.5px}
+.michango-week-table thead th:nth-child(even){background:#fde9b0}
+.michango-week-table thead th:first-child,.michango-week-table tbody td:first-child{font-weight:700;color:var(--ink);background:#f1f5f9!important}
+.michango-week-table tbody td{color:var(--ink2);font-weight:700}
+.michango-total{padding:12px 18px;font-size:13px;font-weight:700;text-align:right;background:#f8fafc;border-top:1px solid var(--line)}
+
 /* CHART */
 .chart-sec{background:var(--panel);border-radius:var(--r);border:1px solid var(--line);box-shadow:var(--sh);margin-bottom:20px;overflow:hidden}
 .chart-head{padding:16px 22px;border-bottom:1px solid var(--line);background:#f8fafc;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
@@ -257,6 +277,18 @@ tr:hover td{background:#f8fafc}
   </div>
 </div>
 
+<!-- CONFIRM DIALOG (in-app replacement for the native confirm() popup) -->
+<div class="overlay" id="confirmOverlay">
+  <div class="detail-box" style="max-width:380px;text-align:center;padding:26px 24px">
+    <div style="font-size:30px;margin-bottom:10px">⚠️</div>
+    <p id="confirmMsg" style="font-size:14px;color:var(--ink);line-height:1.6;margin-bottom:22px">—</p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-outline" id="confirmCancelBtn">Ghairi</button>
+      <button class="btn btn-green" id="confirmOkBtn">Thibitisha</button>
+    </div>
+  </div>
+</div>
+
 <!-- MEMBER DETAIL OVERLAY -->
 <div class="overlay" id="memberOverlay">
   <div class="detail-box">
@@ -326,13 +358,8 @@ tr:hover td{background:#f8fafc}
       <div class="sum-card c-purple"><div class="sum-label">Gawio / Kiongozi</div><div class="sum-value" id="gGawioK">TZS 0</div><div class="sum-sub">10% faida ÷ viongozi 3</div></div>
     </div>
 
-    <!-- Member info card (non-admin) -->
-    <div class="sec" id="memberInfoCard" style="display:none">
-      <div class="sec-head"><h3>ℹ️ Taarifa za Kikundi</h3></div>
-      <div class="sec-body">
-        <p style="font-size:14px;color:var(--mt);line-height:1.8">Kadi zilizo hapo juu zinaonyesha <strong>hali ya fedha ya kikundi kwa ujumla</strong>. Hisa zako binafsi zinasimamiwa na viongozi. Unaweza kuomba mkopo au msaada hapa chini.</p>
-      </div>
-    </div>
+    <!-- Member's own hisa contribution passbook, by awamu (non-admin) -->
+    <div class="michango-card" id="myMichangoCard" style="display:none"></div>
 
     <!-- Group financial summary report (non-admin) — totals only, no per-member breakdown -->
     <div class="sec" id="memberReportCard" style="display:none">
@@ -778,6 +805,7 @@ function dbNotConfigured(notifyId){
 let AW=[],AT=[],AH=[],AM=[],AR=[],AX=[],AMS=[],AMZ=[];
 let currentUser=null, currentRole=null, currentRepTab='hisa-m';
 let viewMode='mwanachama'; // 'kiongozi' or 'mwanachama' — only leaders can switch
+let michangoYear={maendeleo:null,jamii:null}; // selected year per hisa type on the member's own michango card
 
 // ─── Role checks (respect current view mode, so a leader viewing "kama Mwanachama" sees the member dashboard) ──
 const isLeaderRole  = () => ['Mwenyekiti','Katibu','Mwekahazina'].includes(currentRole);
@@ -920,6 +948,28 @@ function flash(msg,type){
   clearTimeout(flash._t);
   flash._t=setTimeout(()=>b.classList.remove('show','warn','error'),type?7000:5000);
 }
+// In-app replacement for window.confirm() — returns a Promise<boolean> so call sites
+// just `if(!await appConfirm('...'))return;` exactly like the native confirm() they replace.
+function appConfirm(message,opts={}){
+  const box=$('confirmOverlay'),okBtn=$('confirmOkBtn'),cancelBtn=$('confirmCancelBtn');
+  $('confirmMsg').textContent=message;
+  okBtn.textContent=opts.okText||'Thibitisha';
+  okBtn.classList.toggle('btn-red',!!opts.danger);
+  okBtn.classList.toggle('btn-green',!opts.danger);
+  box.classList.add('open');
+  return new Promise(resolve=>{
+    function done(v){
+      box.classList.remove('open');
+      okBtn.removeEventListener('click',onOk);
+      cancelBtn.removeEventListener('click',onCancel);
+      resolve(v);
+    }
+    function onOk(){done(true);}
+    function onCancel(){done(false);}
+    okBtn.addEventListener('click',onOk);
+    cancelBtn.addEventListener('click',onCancel);
+  });
+}
 function switchAuthTab(t){
   ['loginSection','regSection'].forEach(s=>$(s).classList.add('hidden'));
   ['tLogin','tReg'].forEach(b=>$(b).classList.remove('active'));
@@ -1042,6 +1092,7 @@ function startApp(){
 function renderAll(){
   renderHeader();
   renderDashibodi();
+  renderMichangoCard();
   renderWasifu();
   if(viewMode==='mwanachama'){
     renderMikopo();
@@ -1080,12 +1131,12 @@ function renderHeader(){
   }
   // Show/hide admin-only elements (chart, etc.)
   document.querySelectorAll('.admin-only').forEach(el=>el.style.display='none');
-  $('memberInfoCard').style.display='block';
   $('memberReportCard').style.display='block';
+  $('myMichangoCard').style.display='block';
 
   if(isAdmin()){
-    $('memberInfoCard').style.display='none';
     $('memberReportCard').style.display='none';
+    $('myMichangoCard').style.display='none';
     document.querySelectorAll('.admin-only').forEach(el=>el.style.display='');
   }
 
@@ -1129,6 +1180,70 @@ function renderDashibodi(){
     ['Gawio kwa Kila Kiongozi',fmt(gawioK)],
     ['Idadi ya Wanachama Waliosajiliwa',approved.length]
   ].map(([lbl,val])=>`<tr><td><strong>${lbl}</strong></td><td style="text-align:right">${val}</td></tr>`).join('');
+}
+
+// Member's own hisa contribution passbook — one card per hisa type (maendeleo / jamii),
+// with a year picker (2020-2026, plus any year outside that range that actually has data)
+// showing that year's contributions broken down by month, built from hisa_history.
+function onMichangoYearChange(aina,year){
+  michangoYear[aina]=parseInt(year);
+  renderMichangoCard();
+}
+function renderMichangoCard(){
+  const card=$('myMichangoCard');
+  if(!card||!currentUser)return;
+  const me=AW.find(w=>w.id===currentUser.id)||currentUser;
+  const mine=AH.filter(h=>h.mwanachama_id===currentUser.id);
+  const curYear=new Date().getFullYear();
+  const MSW=MONTHS_SW.map(m=>m.toUpperCase());
+
+  // One 6-month table: a header row of month names, and a single row of that
+  // month's total contribution (this SACCO only takes one payment per month).
+  const halfTable=(monthIdxs,yearRows)=>{
+    const monthTotals=monthIdxs.map(mi=>yearRows.reduce((s,h)=>{
+      const d=new Date(h.tarehe);
+      return (!isNaN(d)&&d.getMonth()===mi)?s+h.kiasi:s;
+    },0));
+    const heads=monthIdxs.map(mi=>`<th>${MSW[mi]}</th>`).join('');
+    const cells=monthTotals.map(v=>`<td>${v?fmtN(v):'0'}</td>`).join('');
+    return `<table class="michango-week-table">
+        <thead><tr><th>MWEZI</th>${heads}</tr></thead>
+        <tbody><tr><td>KIASI</td>${cells}</tr></tbody>
+      </table>`;
+  };
+
+  const block=(aina,label)=>{
+    const rows=mine.filter(h=>h.aina===aina);
+    const years=[];for(let y=2020;y<=2026;y++)years.push(y);
+    rows.forEach(h=>{const y=parseInt((h.tarehe||'').slice(0,4));if(y&&!years.includes(y))years.push(y);});
+    years.sort((a,b)=>a-b);
+    if(michangoYear[aina]===null||!years.includes(michangoYear[aina])){
+      michangoYear[aina]=years.includes(curYear)?curYear:years[years.length-1];
+    }
+    const selYear=michangoYear[aina];
+    const yearRows=rows.filter(h=>(h.tarehe||'').slice(0,4)===String(selYear));
+    const yearTotal=yearRows.reduce((s,h)=>s+h.kiasi,0);
+
+    const yearOptions=years.map(y=>`<option value="${y}" ${y===selYear?'selected':''}>${y}</option>`).join('');
+    const bar=`<div class="michango-bar">
+        <span>MICHANGO YA ${label.toUpperCase()}</span>
+        <select class="michango-year-select" onchange="onMichangoYearChange('${aina}',this.value)">${yearOptions}</select>
+      </div>`;
+    const meta=`<div class="michango-meta">
+        <span><strong>JINA:</strong> ${me.jina_kamili||'—'}</span>
+        <span><strong>NA:</strong> ${toIntlPhone(me.namba_simu||'')}</span>
+        <span class="michango-count">MICHANGO MWAKA ${selYear}: ${yearRows.length}</span>
+      </div>`;
+    return `<div class="michango-block">${bar}${meta}
+      <div class="michango-weeks-wrap">
+        ${halfTable([0,1,2,3,4,5],yearRows)}
+        ${halfTable([6,7,8,9,10,11],yearRows)}
+      </div>
+      <div class="michango-total">JUMLA YA MICHANGO MWAKA ${selYear}: ${fmt(yearTotal)}</div>
+    </div>`;
+  };
+
+  card.innerHTML = block('maendeleo','Hisa Maendeleo') + block('jamii','Hisa Jamii');
 }
 
 // ════════════════════════════════════
@@ -1582,13 +1697,13 @@ async function idhinishaMwanachama(id){
   // Notify Mwenyekiti that a new member was approved
   smsMwenyekiti(`THE HEROES: Mwanachama mpya ameidhinishwa na Katibu. Jina: ${mem.jina_kamili||'—'}. Simu: ${mem.namba_simu||'—'}.`);
   // Notify the member so they know they can now log in
-  smsMember(mem,`THE HEROES: Hongera ${mem.jina_kamili||''}! Usajili wako umeidhinishwa na Katibu. Sasa unaweza kuingia mfumoni ukitumia namba yako ya simu na nywila uliyoweka.`);
+  smsMember(mem,`Hongera ${mem.jina_kamili||''}, Usajili wako katika kikundi cha THE HEROES umeidhinishwa. Sasa unaweza kutembelea akaunti yako mda wowote ndani ya system kupitia username yako pamoja na password/nywila uliotengeneza wakati wa usajili.`);
   // Notify all other members that a new member has joined
   smsAllMembers(jinaMpokeaji=>`Habari ${jinaMpokeaji}, Ndugu ${mem.jina_kamili||''}, amethibitishwa na kuwa mwanachama mpya wa kikundi cha THE HEROES.`,id);
 }
 async function kataaMwanachama(id){
   if(!isKatibu()&&!isMwenyekiti()){notify('hisaNotify','Kukataa ombi ni kazi ya Katibu.','error');return;}
-  if(!confirm('Kataa ombi hili?'))return;
+  if(!await appConfirm('Kataa ombi hili?',{danger:true,okText:'Kataa'}))return;
   const mem=AW.find(w=>w.id===id)||{};
   await DB.patch('wanachama',`id=eq.${id}`,{status:'rejected'});
   await loadAll();
@@ -1619,7 +1734,7 @@ async function idhinishaMasasisho(id){
 
 async function kataaMasasisho(id){
   if(!isKatibu()){notify('hisaNotify','Hakuna ruhusa.','error');return;}
-  if(!confirm('Kataa ombi hili la kusasisha taarifa?'))return;
+  if(!await appConfirm('Kataa ombi hili la kusasisha taarifa?',{danger:true,okText:'Kataa'}))return;
   const req=AMZ.find(r=>r.id===id);
   const mem=req?AW.find(w=>w.id===req.mwanachama_id):null;
   await DB.patch('maombi_masasisho',`id=eq.${id}`,{status:'rejected',admin_jina:currentUser.jina_kamili,tarehe_idhinisha:new Date().toISOString()});
@@ -1670,7 +1785,7 @@ async function idhinishaMkopo(id){
 
 async function kataaMkopo(id){
   if(!isMwekahazina()&&!isMwenyekiti()){notify('hisaNotify','Hakuna ruhusa.','error');return;}
-  if(!confirm('Kataa mkopo huu?'))return;
+  if(!await appConfirm('Kataa mkopo huu?',{danger:true,okText:'Kataa'}))return;
   const l=AM.find(m=>m.id===id);
   const mem=l?AW.find(w=>w.id===l.mwanachama_id):null;
   await DB.patch('mikopo',`id=eq.${id}`,{status:'rejected'});
@@ -1721,7 +1836,7 @@ async function idhinishaMsaada(msId){
 
 async function kataaMsaada(id){
   if(!isMwekahazina()&&!isMwenyekiti()){notify('hisaNotify','Hakuna ruhusa.','error');return;}
-  if(!confirm('Kataa ombi hili?'))return;
+  if(!await appConfirm('Kataa ombi hili?',{danger:true,okText:'Kataa'}))return;
   const ms=AMS.find(m=>m.id===id);
   const mem=ms?AW.find(w=>w.id===ms.mwanachama_id):null;
   await DB.patch('maombi_msaada',`id=eq.${id}`,{status:'rejected'});
@@ -2022,7 +2137,7 @@ function exportPDF(){generateReport();setTimeout(()=>window.print(),350);}
 // ════════════════════════════════════
 async function pendingFutaMwanachama(id,jina){
   if(!isKatibu()){notify('hisaNotify','Kufuta mwanachama ni kazi ya Katibu (kupeleka kwa Mwenyekiti).','error');return;}
-  if(!confirm(`Tuma ombi la kufuta "${jina}" kwa Mwenyekiti kwa idhini?`))return;
+  if(!await appConfirm(`Tuma ombi la kufuta "${jina}" kwa Mwenyekiti kwa idhini?`,{okText:'Tuma Ombi'}))return;
   addPending({
     type:'futa_mwanachama',
     title:`Futa Mwanachama: ${jina}`,
@@ -2037,7 +2152,7 @@ async function pendingFutaMwanachama(id,jina){
 
 async function futaMwanachamaDirect(id,jina){
   if(!isMwenyekiti()){notify('hisaNotify','Idhini ya kufuta ni kazi ya Mwenyekiti.','error');return;}
-  if(!confirm(`Futa "${jina}" kabisa?`))return;
+  if(!await appConfirm(`Futa "${jina}" kabisa?`,{danger:true,okText:'Futa'}))return;
   await DB.del('tegemezi',`mwanachama_id=eq.${id}`);
   await DB.del('maombi_msaada',`mwanachama_id=eq.${id}`);
   await DB.del('marejesho',`mwanachama_id=eq.${id}`);
@@ -2147,7 +2262,7 @@ async function idhinishaMsaadaPending(pendingId,msId){
 }
 
 async function kataaPending(pendingId,type,data){
-  if(!confirm('Kataa kitendo hiki?'))return;
+  if(!await appConfirm('Kataa kitendo hiki?',{danger:true,okText:'Kataa'}))return;
   // If it's a loan or msaada in 'reviewed' state, revert to pending
   if(type==='mkopo'&&data.mkopo_id){
     await DB.patch('mikopo',`id=eq.${data.mkopo_id}`,{status:'pending'});
